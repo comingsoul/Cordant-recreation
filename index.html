@@ -1,0 +1,768 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>조 편성 & 조원 맞히기</title>
+<meta name="description" content="설문에 답하고, 조를 배정받고, 조장이 조원을 맞혀보세요.">
+<style>
+:root{
+  --bg:#f6f5f9; --card:#ffffff; --ink:#1a1826; --muted:#6b6880; --line:#e6e3ee;
+  --accent:#5b4bd6; --accent-soft:#efecff; --accent-ink:#4436c4;
+  --good:#12855f; --good-soft:#e2f5ee; --warn:#b4541a; --warn-soft:#fdeee2;
+  --bad:#c0364a; --bad-soft:#fdeaee; --shadow:0 1px 2px rgba(24,20,50,.05),0 8px 24px rgba(24,20,50,.06);
+  --radius:16px;
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#131220; --card:#1c1a2b; --ink:#eeecf7; --muted:#9c98b4; --line:#2c2940;
+    --accent:#a89bff; --accent-soft:#272144; --accent-ink:#c7bcff;
+    --good:#5fd6a8; --good-soft:#16342a; --warn:#f0a570; --warn-soft:#38271a;
+    --bad:#ff8497; --bad-soft:#3a1e26; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.25);
+  }
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink); font-size:15px; line-height:1.6;
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif;
+  -webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:560px;margin:0 auto;padding:22px 16px 64px}
+h1,h2,h3{margin:0;line-height:1.35;letter-spacing:-.02em}
+h1{font-size:22px;font-weight:750}
+h2{font-size:18px;font-weight:700}
+h3{font-size:15px;font-weight:700}
+p{margin:0}
+.muted{color:var(--muted)}
+.small{font-size:13px}
+.tiny{font-size:12px}
+.center{text-align:center}
+.stack>*+*{margin-top:12px}
+.stack-lg>*+*{margin-top:18px}
+.row{display:flex;gap:8px;align-items:center}
+.row-between{display:flex;gap:8px;align-items:center;justify-content:space-between}
+.grow{flex:1}
+
+header.top{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:18px}
+.brand{display:flex;align-items:center;gap:9px;min-width:0}
+.dot{width:26px;height:26px;border-radius:9px;background:linear-gradient(140deg,var(--accent),#8f7bff);flex:none}
+.brand b{font-size:16px;font-weight:750;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+
+.card{background:var(--card);border:1px solid var(--line);border-radius:var(--radius);padding:18px;box-shadow:var(--shadow)}
+.card+.card{margin-top:14px}
+.card.flat{box-shadow:none}
+
+label.field{display:block}
+label.field>span.lab{display:block;font-weight:650;font-size:14px;margin-bottom:7px}
+input[type=text],input[type=tel],input[type=number],select,textarea{
+  width:100%;padding:12px 13px;border:1px solid var(--line);border-radius:12px;
+  background:var(--bg);color:var(--ink);font:inherit;font-size:15px;outline:none;
+}
+textarea{min-height:88px;resize:vertical}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+select{appearance:none;background-image:linear-gradient(45deg,transparent 50%,var(--muted) 50%),linear-gradient(135deg,var(--muted) 50%,transparent 50%);background-position:calc(100% - 19px) 50%,calc(100% - 14px) 50%;background-size:5px 5px,5px 5px;background-repeat:no-repeat;padding-right:36px}
+
+button{font:inherit;cursor:pointer}
+.btn{
+  display:inline-flex;align-items:center;justify-content:center;gap:7px;
+  padding:13px 18px;border-radius:13px;border:1px solid transparent;
+  background:var(--accent);color:#fff;font-weight:700;font-size:15px;width:100%;
+  transition:transform .06s ease,filter .15s ease;
+}
+.btn:hover{filter:brightness(1.06)}
+.btn:active{transform:translateY(1px)}
+.btn[disabled]{opacity:.45;cursor:not-allowed;filter:none}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.soft{background:var(--accent-soft);color:var(--accent-ink)}
+.btn.sm{padding:9px 13px;font-size:13.5px;border-radius:11px;width:auto}
+
+.chips{display:flex;flex-wrap:wrap;gap:8px}
+.chip{
+  padding:10px 14px;border-radius:12px;border:1px solid var(--line);background:var(--bg);
+  color:var(--ink);font-weight:600;font-size:14px;flex:1;text-align:center;min-width:64px;
+}
+.chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.chip.mini{padding:9px 0;font-size:14px}
+
+.badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
+.badge.a{background:var(--accent-soft);color:var(--accent-ink)}
+.badge.g{background:var(--good-soft);color:var(--good)}
+.badge.w{background:var(--warn-soft);color:var(--warn)}
+.badge.b{background:var(--bad-soft);color:var(--bad)}
+
+.note{padding:12px 14px;border-radius:12px;font-size:13.5px}
+.note.a{background:var(--accent-soft);color:var(--accent-ink)}
+.note.w{background:var(--warn-soft);color:var(--warn)}
+.note.b{background:var(--bad-soft);color:var(--bad)}
+.note.g{background:var(--good-soft);color:var(--good)}
+
+.qa{border-top:1px dashed var(--line);padding-top:11px;margin-top:11px}
+.qa:first-child{border-top:0;padding-top:0;margin-top:0}
+.qa .q{font-size:12.5px;color:var(--muted);font-weight:600}
+.qa .a{font-size:15px;margin-top:2px;white-space:pre-wrap;word-break:break-word}
+
+.member{display:flex;align-items:center;gap:11px;padding:11px 0;border-top:1px solid var(--line)}
+.member:first-child{border-top:0}
+.avatar{width:36px;height:36px;border-radius:12px;background:var(--accent-soft);color:var(--accent-ink);display:grid;place-items:center;font-weight:750;font-size:14px;flex:none}
+.avatar.lead{background:var(--accent);color:#fff}
+
+.count{display:flex;gap:8px;justify-content:center}
+.count div{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:10px 4px;min-width:64px;text-align:center}
+.count b{display:block;font-size:24px;font-weight:750;font-variant-numeric:tabular-nums;letter-spacing:-.03em}
+.count span{font-size:11px;color:var(--muted)}
+
+.guess{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--bg)}
+.guess+.guess{margin-top:12px}
+.guess.dup{border-color:var(--bad);box-shadow:0 0 0 3px var(--bad-soft)}
+.guess .head{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:10px}
+.guess .tag{width:30px;height:30px;border-radius:10px;background:var(--accent);color:#fff;display:grid;place-items:center;font-weight:750;font-size:14px}
+
+table.rank{width:100%;border-collapse:collapse;font-size:14px}
+table.rank th,table.rank td{padding:10px 8px;text-align:left;border-bottom:1px solid var(--line)}
+table.rank th{font-size:12px;color:var(--muted);font-weight:650}
+table.rank td.n{font-variant-numeric:tabular-nums}
+table.rank tr.me td{background:var(--accent-soft);color:var(--accent-ink);font-weight:700}
+
+.modal-bg{position:fixed;inset:0;background:rgba(16,12,36,.5);display:grid;place-items:center;padding:20px;z-index:50}
+.modal{background:var(--card);border-radius:18px;padding:20px;max-width:360px;width:100%;box-shadow:var(--shadow)}
+
+.demo{background:var(--warn-soft);color:var(--warn);font-size:12.5px;padding:9px 13px;border-radius:11px;margin-bottom:14px;font-weight:600}
+.spin{width:22px;height:22px;border:2.5px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;margin:30px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+.fade{animation:fd .25s ease}
+@keyframes fd{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+</style>
+</head>
+<body>
+<div class="wrap"><div id="app"><div class="spin"></div></div></div>
+
+<script>
+/* =====================================================================
+   1) 설정  —  Supabase 정보를 넣으면 실제 서비스로 동작합니다.
+      비워두면 "데모 모드"(브라우저 메모리)로 화면만 체험할 수 있습니다.
+   ===================================================================== */
+const CONFIG = {
+  SUPABASE_URL: "https://lewiipqawxuzkpdlnlvv.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_FP6oITe8CQ03he_kSTz0Fw_ICUtGnZ9",
+};
+
+/* =====================================================================
+   2) 공통 유틸
+   ===================================================================== */
+const DEMO = !CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY;
+const $ = (s, r) => (r || document).querySelector(s);
+const $$ = (s, r) => Array.from((r || document).querySelectorAll(s));
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;" }[c]));
+const norm = s => String(s ?? "").trim().replace(/\s+/g, "");
+const initial = n => String(n || "?").trim().slice(-2);
+const pad2 = n => String(n).padStart(2, "0");
+
+const DEFAULT_QUESTIONS = [
+  { id:"q1", label:"요즘 가장 자주 듣는 노래는?", placeholder:"가수 - 제목", type:"text" },
+  { id:"q2", label:"인생 음식 딱 하나만 고른다면?", placeholder:"예) 엄마표 김치찌개", type:"text" },
+  { id:"q3", label:"로또 1등에 당첨되면 가장 먼저 할 일은?", placeholder:"솔직하게 적어주세요", type:"text" },
+  { id:"q4", label:"나를 한 단어로 표현하면?", placeholder:"예) 잔잔한 파도", type:"text" },
+  { id:"q5", label:"최근에 가장 크게 웃었던 순간은?", placeholder:"짧게 적어주세요", type:"textarea" },
+];
+
+async function sb(path, opt = {}) {
+  const url = CONFIG.SUPABASE_URL.replace(/\/$/, "") + "/rest/v1/" + path;
+  const key = CONFIG.SUPABASE_ANON_KEY;
+  const send = withAuth => fetch(url, {
+    method: opt.method || "GET",
+    headers: {
+      apikey: key,
+      ...(withAuth ? { Authorization: "Bearer " + key } : {}),
+      "Content-Type": "application/json",
+      ...(opt.prefer ? { Prefer: opt.prefer } : {}),
+    },
+    body: opt.body ? JSON.stringify(opt.body) : undefined,
+  });
+  // 구형 anon 키(JWT)와 신형 publishable 키 양쪽 모두 지원
+  let res = await send(true);
+  if (res.status === 401) res = await send(false);
+  const text = await res.text();
+  if (!res.ok) throw new Error("서버 오류 (" + res.status + ") " + text.slice(0, 200));
+  return text ? JSON.parse(text) : null;
+}
+
+/* =====================================================================
+   3) 데모 데이터 (Supabase 미설정 시에만 사용)
+   ===================================================================== */
+const DEMO_DB = (() => {
+  const A = (name, phone4, y, g, mbti, ls, a) => ({
+    id: "a-" + name, name, phone4, birth_year: y, gender: g, mbti, leader_score: ls,
+    answers: { q1:a[0], q2:a[1], q3:a[2], q4:a[3], q5:a[4] },
+    submitted: true, submitted_at: "2026-09-01T0" + (1 + (y % 8)) + ":00:00Z",
+  });
+  const people = [
+    A("배현우","1234",2000,"M","INTJ",3,["실리카겔 - 백역","마라탕","조용히 회사부터 그만둔다","계획형 인간","고양이가 문 여는 걸 배웠을 때"]),
+    A("서예린","1234",1999,"F","ISTJ",2,["아이유 - 밤편지","평양냉면","부모님 집 사드리기","성실한 거북이","동생이 넘어지며 춤춘 날"]),
+    A("한소희","1234",1998,"F","INFP",3,["검정치마 - 기다린 만큼","떡볶이","세계일주 티켓 예약","몽상가","친구 결혼식에서 축가 삑사리"]),
+    A("최유진","1234",1997,"F","ESTJ",4,["뉴진스 - Ditto","엄마표 김치찌개","적금 통장 만들기","추진력 갑","팀 회식에서 부장님 성대모사"]),
+    A("박서연","1234",1996,"F","ISFJ",3,["잔나비 - 주저하는 연인들을 위해","닭갈비","가족들 모아 발표","다정한 담요","강아지가 내 슬리퍼 물고 도망"]),
+    A("윤채원","1234",1995,"F","ISTP",2,["새소년 - 난춘","초밥","일단 아무한테도 말 안 함","무심한 편","동료가 회의 중 커피 쏟았을 때"]),
+    A("김지훈","1234",1994,"M","ENFP",5,["데이식스 - 예뻤어","곱창","친구들 다 불러서 파티","시끄러운 햇살","길에서 아는 사람 헛본 날"]),
+    A("이도윤","1234",1993,"M","INTP",2,["라디오헤드 - Creep","라멘","세금부터 계산한다","분석하는 사람","AI가 내 이름 틀리게 부를 때"]),
+    A("강하늘","1234",1992,"M","ENTJ",5,["임영웅 - 사랑은 늘 도망가","삼겹살","사업 계획서 작성","돌직구","조카가 나를 삼촌 아닌 이모라 불렀을 때"]),
+    A("정민서","1234",1991,"F","INFJ",3,["아이브 - LOVE DIVE","월남쌈","조용한 시골집 알아보기","깊은 우물","친구 잠꼬대 녹음 들었을 때"]),
+    A("임태호","1234",1990,"M","ESFP",4,["싸이 - 챔피언","치킨","바로 퇴사 통보","분위기 메이커","노래방에서 마이크 부순 날"]),
+    A("오준혁","1234",1989,"M","ENFJ",4,["폴킴 - 모든 날, 모든 순간","된장찌개","부모님 여행 보내드리기","맏형 스타일","팀원이 내 자리에 곰인형 앉혀둔 날"]),
+  ];
+  const teams = [
+    { id:"t1", no:1, leader_id:"a-최유진", ids:["a-배현우","a-서예린","a-한소희","a-최유진"] },
+    { id:"t2", no:2, leader_id:"a-김지훈", ids:["a-박서연","a-윤채원","a-김지훈","a-이도윤"] },
+    { id:"t3", no:3, leader_id:"a-강하늘", ids:["a-강하늘","a-정민서","a-임태호","a-오준혁"] },
+  ];
+  return {
+    settings: {
+      id:1, event_title:"조 편성 & 조원 맞히기", form_open:true,
+      reveal_at:null, teams_published:true, team_size:4, questions:DEFAULT_QUESTIONS,
+    },
+    applicants: people,
+    teams: teams.map(t => ({ id:t.id, no:t.no, leader_id:t.leader_id })),
+    team_members: teams.flatMap(t => t.ids.map(id => ({ team_id:t.id, applicant_id:id }))),
+    guess_results: [
+      { id:"g1", team_id:"t3", leader_id:"a-강하늘", correct:3, total:3, attempts:1, duration_ms:41000, cleared:true },
+    ],
+  };
+})();
+
+/* =====================================================================
+   4) 데이터 접근 계층
+   ===================================================================== */
+const api = {
+  async getSettings() {
+    if (DEMO) return DEMO_DB.settings;
+    const r = await sb("settings?id=eq.1&select=*");
+    const s = r && r[0];
+    if (!s) throw new Error("settings 행이 없습니다. schema.sql을 실행했는지 확인해주세요.");
+    if (!Array.isArray(s.questions) || !s.questions.length) s.questions = DEFAULT_QUESTIONS;
+    return s;
+  },
+  async findApplicant(name, phone4) {
+    if (DEMO) return DEMO_DB.applicants.find(a => norm(a.name) === norm(name) && a.phone4 === phone4) || null;
+    const rows = await sb("applicants?select=*&phone4=eq." + encodeURIComponent(phone4));
+    return rows.find(r => norm(r.name) === norm(name)) || null;
+  },
+  async createApplicant(data) {
+    if (DEMO) { const row = { id:"a-" + Date.now(), ...data }; DEMO_DB.applicants.push(row); return row; }
+    const r = await sb("applicants", { method:"POST", body:data, prefer:"return=representation" });
+    return r[0];
+  },
+  async updateApplicant(id, patch) {
+    if (DEMO) { const a = DEMO_DB.applicants.find(x => x.id === id); Object.assign(a, patch); return a; }
+    const r = await sb("applicants?id=eq." + id, { method:"PATCH", body:patch, prefer:"return=representation" });
+    return r[0];
+  },
+  async getMyTeam(applicantId) {
+    let link, team, memberIds;
+    if (DEMO) {
+      link = DEMO_DB.team_members.find(m => m.applicant_id === applicantId);
+      if (!link) return null;
+      team = DEMO_DB.teams.find(t => t.id === link.team_id);
+      memberIds = DEMO_DB.team_members.filter(m => m.team_id === team.id).map(m => m.applicant_id);
+      const members = memberIds.map(id => DEMO_DB.applicants.find(a => a.id === id));
+      return { team, members };
+    }
+    const links = await sb("team_members?select=team_id&applicant_id=eq." + applicantId);
+    if (!links.length) return null;
+    const tid = links[0].team_id;
+    const ts = await sb("teams?select=*&id=eq." + tid);
+    if (!ts.length) return null;
+    const ms = await sb("team_members?select=applicants(id,name,birth_year,mbti,leader_score,answers)&team_id=eq." + tid);
+    return { team: ts[0], members: ms.map(m => m.applicants).filter(Boolean) };
+  },
+  async saveResult(row) {
+    if (DEMO) { DEMO_DB.guess_results.push({ id:"g" + Date.now(), ...row }); return; }
+    await sb("guess_results", { method:"POST", body:row });
+  },
+  async leaderboard() {
+    let results, teams, names;
+    if (DEMO) {
+      results = DEMO_DB.guess_results.filter(r => r.cleared);
+      teams = DEMO_DB.teams;
+      names = DEMO_DB.applicants.map(a => ({ id:a.id, name:a.name }));
+    } else {
+      results = await sb("guess_results?select=*&cleared=is.true");
+      teams = await sb("teams?select=id,no");
+      names = await sb("applicants?select=id,name");
+    }
+    const best = new Map();
+    for (const r of results) {
+      const cur = best.get(r.leader_id);
+      if (!cur || r.attempts < cur.attempts || (r.attempts === cur.attempts && (r.duration_ms ?? 1e9) < (cur.duration_ms ?? 1e9))) best.set(r.leader_id, r);
+    }
+    const nameOf = id => (names.find(n => n.id === id) || {}).name || "?";
+    const noOf = id => (teams.find(t => t.id === id) || {}).no ?? "-";
+    return Array.from(best.values())
+      .sort((a, b) => a.attempts - b.attempts || (a.duration_ms ?? 1e9) - (b.duration_ms ?? 1e9))
+      .map((r, i) => ({ rank:i + 1, name:nameOf(r.leader_id), teamNo:noOf(r.team_id), ...r }));
+  },
+};
+
+/* =====================================================================
+   5) 상태
+   ===================================================================== */
+const S = {
+  screen: "login",
+  settings: null,
+  me: null,
+  team: null,
+  members: [],
+  draft: {},
+  game: null,
+  lastResult: null,
+  board: null,
+  error: "",
+};
+const gameQuestions = () => (S.settings.questions || DEFAULT_QUESTIONS);
+const isLeader = () => !!(S.team && S.me && S.team.leader_id === S.me.id);
+const leaderOf = () => S.members.find(m => m.id === (S.team && S.team.leader_id)) || null;
+const teammates = () => S.members.filter(m => m.id !== S.me.id);
+
+function revealState() {
+  const s = S.settings;
+  if (!s.teams_published) return { open:false, at:null };
+  if (!s.reveal_at) return { open:true, at:null };
+  const at = new Date(s.reveal_at);
+  return { open: Date.now() >= at.getTime(), at };
+}
+
+/* =====================================================================
+   6) 화면
+   ===================================================================== */
+function shell(body) {
+  return `
+    <header class="top">
+      <div class="brand"><div class="dot"></div><b>${esc(S.settings ? S.settings.event_title : "조 편성 & 조원 맞히기")}</b></div>
+      ${S.me ? `<button class="btn ghost sm" data-act="logout">나가기</button>` : ""}
+    </header>
+    ${DEMO ? `<div class="demo">데모 모드 · Supabase 정보를 넣기 전까지는 저장되지 않습니다. 체험 로그인 → 조장: 김지훈 / 1234, 조원: 이도윤 / 1234</div>` : ""}
+    ${S.error ? `<div class="note b" style="margin-bottom:14px">${esc(S.error)}</div>` : ""}
+    <div class="fade">${body}</div>`;
+}
+
+function viewLogin() {
+  return shell(`
+    <div class="card stack">
+      <div>
+        <h1>안녕하세요 👋</h1>
+        <p class="muted small" style="margin-top:6px">이름과 전화번호 뒷 4자리로 시작합니다. 나중에 같은 정보로 다시 들어와 조와 게임을 확인할 수 있어요.</p>
+      </div>
+      <label class="field"><span class="lab">이름</span>
+        <input type="text" id="in-name" placeholder="홍길동" autocomplete="name"></label>
+      <label class="field"><span class="lab">전화번호 뒷 4자리</span>
+        <input type="tel" id="in-phone" placeholder="1234" inputmode="numeric" maxlength="4" autocomplete="off"></label>
+      <button class="btn" data-act="login">시작하기</button>
+      <p class="tiny muted center">입력하신 정보는 본인 확인과 조 편성에만 사용됩니다.</p>
+    </div>`);
+}
+
+function viewForm() {
+  const d = S.draft;
+  const years = []; for (let y = new Date().getFullYear() - 14; y >= 1950; y--) years.push(y);
+  const mbtiAxis = [["E","I"],["N","S"],["T","F"],["J","P"]];
+  const cur = (d.mbti || "____").split("");
+  return shell(`
+    <div class="card stack-lg">
+      <div>
+        <div class="row-between"><h2>신청서 작성</h2><span class="badge a">${esc(S.me.name)}님</span></div>
+        <p class="muted small" style="margin-top:6px">답변은 조 편성과 “조원 맞히기” 게임에 사용됩니다. 솔직할수록 재미있어요.</p>
+      </div>
+
+      <label class="field"><span class="lab">출생연도</span>
+        <select id="f-year">
+          <option value="">선택해주세요</option>
+          ${years.map(y => `<option value="${y}" ${String(d.birth_year) === String(y) ? "selected" : ""}>${y}년</option>`).join("")}
+        </select></label>
+
+      <div><span class="lab" style="display:block;font-weight:650;font-size:14px;margin-bottom:7px">성별</span>
+        <div class="chips">
+          ${[["M","남성"],["F","여성"],["X","선택 안 함"]].map(([v,l]) =>
+            `<button type="button" class="chip" data-set="gender" data-val="${v}" aria-pressed="${d.gender === v}">${l}</button>`).join("")}
+        </div></div>
+
+      <div><span class="lab" style="display:block;font-weight:650;font-size:14px;margin-bottom:7px">MBTI</span>
+        <div class="stack">
+          ${mbtiAxis.map(([a,b], i) => `
+            <div class="chips">
+              <button type="button" class="chip mini" data-mbti="${i}" data-val="${a}" aria-pressed="${cur[i] === a}">${a}</button>
+              <button type="button" class="chip mini" data-mbti="${i}" data-val="${b}" aria-pressed="${cur[i] === b}">${b}</button>
+            </div>`).join("")}
+        </div>
+        <p class="tiny muted" style="margin-top:7px">첫 글자(E/I)는 조 편성과 조장 선정에 사용됩니다.</p>
+      </div>
+
+      <div><span class="lab" style="display:block;font-weight:650;font-size:14px;margin-bottom:7px">모임에서 분위기를 주도하는 편인가요?</span>
+        <div class="chips">
+          ${[1,2,3,4,5].map(n => `<button type="button" class="chip mini" data-set="leader_score" data-val="${n}" aria-pressed="${Number(d.leader_score) === n}">${n}</button>`).join("")}
+        </div>
+        <div class="row-between tiny muted" style="margin-top:6px"><span>전혀 아니다</span><span>매우 그렇다</span></div>
+      </div>
+
+      ${gameQuestions().map((q, i) => `
+        <label class="field"><span class="lab">${i + 1}. ${esc(q.label)}</span>
+          ${q.type === "textarea"
+            ? `<textarea data-q="${esc(q.id)}" placeholder="${esc(q.placeholder || "")}">${esc((d.answers || {})[q.id] || "")}</textarea>`
+            : `<input type="text" data-q="${esc(q.id)}" placeholder="${esc(q.placeholder || "")}" value="${esc((d.answers || {})[q.id] || "")}">`}
+        </label>`).join("")}
+
+      <div class="stack">
+        <button class="btn" data-act="submit">최종 제출하기</button>
+        <button class="btn ghost" data-act="save">임시 저장</button>
+        <p class="tiny muted center">최종 제출하면 답변을 수정할 수 없습니다.</p>
+      </div>
+    </div>`);
+}
+
+function viewWaiting() {
+  const rv = revealState();
+  return shell(`
+    <div class="card center stack">
+      <div class="badge g" style="margin:0 auto">제출 완료</div>
+      <h2>${esc(S.me.name)}님, 접수되었습니다</h2>
+      <p class="muted small">조가 공개되면 이 화면에서 바로 확인할 수 있어요. 같은 이름·번호로 다시 들어오시면 됩니다.</p>
+      ${rv.at && !rv.open ? `
+        <div style="margin-top:6px">
+          <p class="small muted" style="margin-bottom:8px">조 공개까지</p>
+          <div class="count" id="countdown"></div>
+          <p class="tiny muted" style="margin-top:10px">${esc(fmtDateTime(rv.at))} 공개</p>
+        </div>`
+      : `<div class="note a">아직 조 편성이 공개되지 않았습니다. 잠시 후 다시 확인해주세요.</div>`}
+      <button class="btn ghost" data-act="refresh">새로고침</button>
+    </div>
+    ${myAnswersCard()}`);
+}
+
+function myAnswersCard() {
+  const a = S.me.answers || {};
+  return `<div class="card">
+    <h3 style="margin-bottom:10px">내가 적은 답변</h3>
+    ${gameQuestions().map(q => `<div class="qa"><div class="q">${esc(q.label)}</div><div class="a">${esc(a[q.id] || "-")}</div></div>`).join("")}
+  </div>`;
+}
+
+function viewTeam() {
+  const lead = leaderOf();
+  const mates = teammates();
+  const iAmLeader = isLeader();
+  return shell(`
+    <div class="card stack">
+      <div class="row-between">
+        <div><p class="small muted">나의 조</p><h1>${S.team.no}조</h1></div>
+        <span class="badge ${iAmLeader ? "a" : "g"}">${iAmLeader ? "조장" : "조원"}</span>
+      </div>
+      <div>
+        ${S.members.map(m => `
+          <div class="member">
+            <div class="avatar ${m.id === S.team.leader_id ? "lead" : ""}">${esc(initial(m.name))}</div>
+            <div class="grow">
+              <div style="font-weight:650">${esc(m.name)}${m.id === S.me.id ? ' <span class="tiny muted">(나)</span>' : ""}</div>
+              <div class="tiny muted">${m.id === S.team.leader_id ? "조장" : "조원"}</div>
+            </div>
+          </div>`).join("")}
+      </div>
+    </div>
+
+    ${iAmLeader ? `
+      <div class="card stack">
+        <div><h2>조원 맞히기</h2>
+        <p class="muted small" style="margin-top:6px">조원 ${mates.length}명의 답변이 익명으로 섞여 있습니다. 어떤 답변이 누구의 것인지 맞혀보세요. 전부 맞히면 등수가 나옵니다.</p></div>
+        ${S.lastResult && S.lastResult.cleared ? `<div class="note g">이미 전원 정답을 맞히셨어요! ${S.lastResult.attempts}번째 시도 · ${fmtDur(S.lastResult.duration_ms)}</div>` : ""}
+        <button class="btn" data-act="game">${S.lastResult && S.lastResult.cleared ? "다시 도전하기" : "게임 시작"}</button>
+        <button class="btn ghost" data-act="board">순위 보기</button>
+      </div>`
+    : `
+      <div class="card stack">
+        <div class="row-between"><h2>조장의 답변</h2><span class="badge a">${esc(lead ? lead.name : "미정")}</span></div>
+        <p class="muted small">조장이 어떤 사람인지 미리 알아두세요. 조원들의 답변은 게임이 끝날 때까지 비공개입니다.</p>
+        <div>
+          ${lead ? gameQuestions().map(q => `<div class="qa"><div class="q">${esc(q.label)}</div><div class="a">${esc((lead.answers || {})[q.id] || "-")}</div></div>`).join("")
+                 : `<div class="note w">아직 조장이 지정되지 않았습니다.</div>`}
+        </div>
+        <button class="btn ghost" data-act="board">순위 보기</button>
+      </div>`}
+    ${myAnswersCard()}`);
+}
+
+function viewGame() {
+  const g = S.game;
+  const names = g.mates.map(m => m.name);
+  const picked = g.picks.filter(Boolean);
+  const dup = new Set(picked.filter((v, i) => picked.indexOf(v) !== i));
+  const ready = g.picks.every(Boolean) && dup.size === 0;
+  return shell(`
+    <div class="card stack">
+      <div class="row-between">
+        <div><h2>조원 맞히기</h2><p class="small muted">${g.attempts > 1 ? g.attempts + "번째 시도" : "각 카드의 주인을 골라주세요"}</p></div>
+        <span class="badge a" id="timer">00:00</span>
+      </div>
+      ${g.cards.map((c, i) => `
+        <div class="guess ${dup.has(g.picks[i]) ? "dup" : ""}">
+          <div class="head">
+            <div class="row"><div class="tag">${String.fromCharCode(65 + i)}</div><b>익명의 조원 ${String.fromCharCode(65 + i)}</b></div>
+          </div>
+          ${gameQuestions().map(q => `<div class="qa"><div class="q">${esc(q.label)}</div><div class="a">${esc((c.answers || {})[q.id] || "-")}</div></div>`).join("")}
+          <div style="margin-top:12px">
+            <select data-pick="${i}">
+              <option value="">누구일까요?</option>
+              ${names.map(n => `<option value="${esc(n)}" ${g.picks[i] === n ? "selected" : ""}>${esc(n)}</option>`).join("")}
+            </select>
+          </div>
+        </div>`).join("")}
+      ${dup.size ? `<div class="note b">같은 사람을 두 번 골랐어요. 서로 다른 사람으로 골라주세요.</div>` : ""}
+      <button class="btn" data-act="grade" ${ready ? "" : "disabled"}>정답 확인</button>
+      <button class="btn ghost" data-act="back">나중에 하기</button>
+    </div>`);
+}
+
+function viewResult() {
+  const r = S.lastResult;
+  return shell(`
+    <div class="card center stack">
+      <div style="font-size:44px;line-height:1">${r.cleared ? "🎉" : "🤔"}</div>
+      <h1>${r.correct} / ${r.total} 정답</h1>
+      ${r.cleared ? `
+        <p class="muted small">${r.attempts}번째 시도 만에 전원 정답! 걸린 시간 ${fmtDur(r.duration_ms)}</p>
+        <div class="note g"><b style="font-size:18px">${r.rank}등</b> · 전원 정답 조장 ${r.totalCleared}명 중</div>`
+      : `<p class="muted small">아쉬워요. 누가 틀렸는지는 알려드리지 않습니다. 다시 도전해보세요!</p>`}
+      <button class="btn" data-act="${r.cleared ? "board" : "game"}">${r.cleared ? "순위 보기" : "다시 도전"}</button>
+      <button class="btn ghost" data-act="back">내 조로 돌아가기</button>
+    </div>`);
+}
+
+function viewBoard() {
+  const rows = S.board || [];
+  return shell(`
+    <div class="card stack">
+      <div><h2>조장 순위</h2><p class="small muted" style="margin-top:6px">조원을 전원 맞힌 조장들의 순위입니다. 시도 횟수가 적을수록, 같으면 빨리 맞힐수록 높습니다.</p></div>
+      ${rows.length ? `
+        <table class="rank">
+          <thead><tr><th>등수</th><th>조장</th><th>조</th><th>시도</th><th>시간</th></tr></thead>
+          <tbody>
+            ${rows.map(r => `<tr class="${S.me && r.leader_id === S.me.id ? "me" : ""}">
+              <td class="n">${r.rank}등</td><td>${esc(r.name)}</td><td class="n">${r.teamNo}조</td>
+              <td class="n">${r.attempts}회</td><td class="n">${fmtDur(r.duration_ms)}</td></tr>`).join("")}
+          </tbody>
+        </table>`
+      : `<div class="note a">아직 전원을 맞힌 조장이 없습니다. 1등의 기회!</div>`}
+      <button class="btn ghost" data-act="back">돌아가기</button>
+    </div>`);
+}
+
+/* =====================================================================
+   7) 렌더 & 이벤트
+   ===================================================================== */
+function fmtDur(ms) {
+  if (!ms && ms !== 0) return "-";
+  const s = Math.round(ms / 1000);
+  return Math.floor(s / 60) + "분 " + pad2(s % 60) + "초";
+}
+function fmtDateTime(d) {
+  return `${d.getFullYear()}. ${d.getMonth() + 1}. ${d.getDate()}. ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;
+}
+
+let timerId = null;
+function render() {
+  if (timerId) { clearInterval(timerId); timerId = null; }
+  const map = { login:viewLogin, form:viewForm, waiting:viewWaiting, team:viewTeam, game:viewGame, result:viewResult, board:viewBoard };
+  $("#app").innerHTML = (map[S.screen] || viewLogin)();
+  if (S.screen === "waiting") startCountdown();
+  if (S.screen === "game") startTimer();
+  window.scrollTo({ top:0 });
+}
+
+function startCountdown() {
+  const el = $("#countdown"); if (!el) return;
+  const at = revealState().at; if (!at) return;
+  const tick = () => {
+    const left = at.getTime() - Date.now();
+    if (left <= 0) { clearInterval(timerId); refresh(); return; }
+    const s = Math.floor(left / 1000);
+    const parts = [["일", Math.floor(s / 86400)], ["시간", Math.floor(s / 3600) % 24], ["분", Math.floor(s / 60) % 60], ["초", s % 60]];
+    el.innerHTML = parts.map(([l, v]) => `<div><b>${pad2(v)}</b><span>${l}</span></div>`).join("");
+  };
+  tick(); timerId = setInterval(tick, 1000);
+}
+
+function startTimer() {
+  const el = $("#timer"); if (!el || !S.game) return;
+  const tick = () => {
+    const s = Math.floor((Date.now() - S.game.startedAt) / 1000);
+    el.textContent = pad2(Math.floor(s / 60)) + ":" + pad2(s % 60);
+  };
+  tick(); timerId = setInterval(tick, 1000);
+}
+
+function toast(msg, kind = "b") { S.error = msg; render(); setTimeout(() => { if (S.error === msg) { S.error = ""; render(); } }, 4000); }
+
+function confirmModal(title, desc, onYes) {
+  const el = document.createElement("div");
+  el.className = "modal-bg";
+  el.innerHTML = `<div class="modal stack">
+      <h2>${esc(title)}</h2><p class="muted small">${esc(desc)}</p>
+      <button class="btn" data-yes>제출하기</button>
+      <button class="btn ghost" data-no>취소</button></div>`;
+  document.body.appendChild(el);
+  el.addEventListener("click", e => {
+    if (e.target.closest("[data-yes]")) { el.remove(); onYes(); }
+    else if (e.target.closest("[data-no]") || e.target === el) el.remove();
+  });
+}
+
+document.addEventListener("click", async e => {
+  const setBtn = e.target.closest("[data-set]");
+  if (setBtn) {
+    const k = setBtn.dataset.set, v = setBtn.dataset.val;
+    S.draft[k] = k === "leader_score" ? Number(v) : v;
+    collectForm(); render(); return;
+  }
+  const mb = e.target.closest("[data-mbti]");
+  if (mb) {
+    const i = Number(mb.dataset.mbti);
+    const cur = (S.draft.mbti || "____").split("");
+    cur[i] = mb.dataset.val;
+    S.draft.mbti = cur.join("");
+    collectForm(); render(); return;
+  }
+  const btn = e.target.closest("[data-act]");
+  if (!btn) return;
+  const act = btn.dataset.act;
+  try {
+    if (act === "login") await doLogin();
+    else if (act === "save") { collectForm(); await persistDraft(false); toast("임시 저장했습니다.", "g"); }
+    else if (act === "submit") { collectForm(); doSubmit(); }
+    else if (act === "refresh") await refresh();
+    else if (act === "logout") { Object.assign(S, { me:null, team:null, members:[], draft:{}, game:null, lastResult:null, screen:"login" }); render(); }
+    else if (act === "game") startGame();
+    else if (act === "grade") await grade();
+    else if (act === "board") { S.board = await api.leaderboard(); S.screen = "board"; render(); }
+    else if (act === "back") { S.screen = S.team ? "team" : "waiting"; render(); }
+  } catch (err) { toast(err.message || String(err)); }
+});
+
+document.addEventListener("change", e => {
+  const p = e.target.closest("[data-pick]");
+  if (p && S.game) { S.game.picks[Number(p.dataset.pick)] = e.target.value; render(); }
+});
+
+function collectForm() {
+  if (S.screen !== "form") return;
+  const y = $("#f-year"); if (y) S.draft.birth_year = y.value ? Number(y.value) : null;
+  const answers = { ...(S.draft.answers || {}) };
+  $$("[data-q]").forEach(el => { answers[el.dataset.q] = el.value; });
+  S.draft.answers = answers;
+}
+
+/* ---------- 흐름 ---------- */
+async function doLogin() {
+  const name = $("#in-name").value.trim();
+  const phone = $("#in-phone").value.trim();
+  if (!name) return toast("이름을 입력해주세요.");
+  if (!/^\d{4}$/.test(phone)) return toast("전화번호 뒷 4자리를 숫자로 입력해주세요.");
+  let me = await api.findApplicant(name, phone);
+  if (!me) {
+    if (!S.settings.form_open) return toast("현재 신청이 마감되었습니다.");
+    me = await api.createApplicant({ name, phone4:phone, leader_score:3, answers:{}, submitted:false });
+  }
+  S.me = me;
+  S.draft = { birth_year:me.birth_year, gender:me.gender, mbti:me.mbti, leader_score:me.leader_score ?? 3, answers:me.answers || {} };
+  await refresh();
+}
+
+async function refresh() {
+  S.settings = await api.getSettings();
+  if (!S.me) { S.screen = "login"; return render(); }
+  S.me = (await api.findApplicant(S.me.name, S.me.phone4)) || S.me;
+  if (!S.me.submitted) { S.screen = "form"; return render(); }
+  const t = await api.getMyTeam(S.me.id);
+  const rv = revealState();
+  if (t && rv.open) {
+    S.team = t.team;
+    S.members = t.members;
+    const me2 = S.members.find(m => m.id === S.me.id);
+    if (me2) S.me = { ...S.me, ...me2 };
+    S.screen = "team";
+  } else { S.team = null; S.members = []; S.screen = "waiting"; }
+  render();
+}
+
+async function persistDraft(submit) {
+  const patch = {
+    birth_year: S.draft.birth_year ?? null,
+    gender: S.draft.gender ?? null,
+    mbti: S.draft.mbti && !S.draft.mbti.includes("_") ? S.draft.mbti : null,
+    leader_score: S.draft.leader_score ?? 3,
+    answers: S.draft.answers || {},
+  };
+  if (submit) { patch.submitted = true; patch.submitted_at = new Date().toISOString(); }
+  S.me = await api.updateApplicant(S.me.id, patch);
+}
+
+function doSubmit() {
+  const d = S.draft;
+  if (!d.birth_year) return toast("출생연도를 선택해주세요.");
+  if (!d.gender) return toast("성별을 선택해주세요.");
+  if (!d.mbti || d.mbti.includes("_")) return toast("MBTI 4가지를 모두 선택해주세요.");
+  const miss = gameQuestions().find(q => !String((d.answers || {})[q.id] || "").trim());
+  if (miss) return toast(`“${miss.label}” 답변을 적어주세요.`);
+  confirmModal("최종 제출할까요?", "제출 후에는 답변을 수정할 수 없습니다.", async () => {
+    try { await persistDraft(true); await refresh(); } catch (err) { toast(err.message); }
+  });
+}
+
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); [a[i], a[j]] = [a[j], a[i]]; }
+  return a;
+}
+
+function startGame() {
+  const mates = teammates();
+  if (mates.length < 2) return toast("조원이 2명 이상일 때 게임을 할 수 있습니다.");
+  const prev = S.game;
+  S.game = {
+    mates,
+    cards: prev ? prev.cards : shuffle(mates),
+    picks: new Array(mates.length).fill(""),
+    startedAt: prev ? prev.startedAt : Date.now(),
+    attempts: prev ? prev.attempts + 1 : 1,
+  };
+  S.screen = "game"; render();
+}
+
+async function grade() {
+  const g = S.game;
+  const correct = g.cards.reduce((n, c, i) => n + (g.picks[i] === c.name ? 1 : 0), 0);
+  const total = g.cards.length;
+  const cleared = correct === total;
+  const duration = Date.now() - g.startedAt;
+  const row = {
+    team_id: S.team.id, leader_id: S.me.id, correct, total,
+    attempts: g.attempts, duration_ms: duration, cleared,
+    finished_at: new Date().toISOString(),
+  };
+  await api.saveResult(row);
+  S.lastResult = { ...row, duration_ms:duration };
+  if (cleared) {
+    const board = await api.leaderboard();
+    const mine = board.find(b => b.leader_id === S.me.id);
+    S.lastResult.rank = mine ? mine.rank : board.length;
+    S.lastResult.totalCleared = board.length;
+    S.board = board;
+    S.game = null;
+  }
+  S.screen = "result"; render();
+}
+
+/* ---------- 시작 ---------- */
+(async () => {
+  try { S.settings = await api.getSettings(); }
+  catch (err) { S.error = err.message; S.settings = { event_title:"조 편성 & 조원 맞히기", questions:DEFAULT_QUESTIONS, teams_published:false, form_open:true }; }
+  render();
+})();
+</script>
+</body>
+</html>

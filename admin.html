@@ -1,0 +1,714 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>관리자 · 조 편성</title>
+<meta name="robots" content="noindex,nofollow">
+<style>
+:root{
+  --bg:#f5f6f9; --card:#fff; --ink:#171826; --muted:#6a6d80; --line:#e4e6ee;
+  --accent:#3f5ae0; --accent-soft:#ecefff; --accent-ink:#2c43c0;
+  --good:#12855f; --good-soft:#e2f5ee; --warn:#a95c14; --warn-soft:#fcf0e0;
+  --bad:#c0364a; --bad-soft:#fdeaee; --shadow:0 1px 2px rgba(20,20,50,.05),0 8px 24px rgba(20,20,50,.05);
+}
+@media (prefers-color-scheme: dark){
+  :root{
+    --bg:#101220; --card:#1a1d2e; --ink:#eceef8; --muted:#989cb4; --line:#292d42;
+    --accent:#93a4ff; --accent-soft:#212747; --accent-ink:#b9c4ff;
+    --good:#5fd6a8; --good-soft:#153229; --warn:#eda869; --warn-soft:#35271a;
+    --bad:#ff8497; --bad-soft:#391e26; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.25);
+  }
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.6;
+  font-family:"Pretendard","Apple SD Gothic Neo","Malgun Gothic",system-ui,-apple-system,"Segoe UI",Roboto,sans-serif}
+.wrap{max-width:1080px;margin:0 auto;padding:22px 18px 80px}
+h1,h2,h3{margin:0;letter-spacing:-.02em;line-height:1.35}
+h1{font-size:21px;font-weight:750}h2{font-size:17px;font-weight:700}h3{font-size:14px;font-weight:700}
+p{margin:0}
+.muted{color:var(--muted)}.small{font-size:13px}.tiny{font-size:12px}
+.stack>*+*{margin-top:12px}
+.row{display:flex;gap:10px;align-items:center;flex-wrap:wrap}
+.row-between{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap}
+.grow{flex:1}
+header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
+.brand{display:flex;align-items:center;gap:9px}
+.dot{width:26px;height:26px;border-radius:9px;background:linear-gradient(140deg,var(--accent),#7d8cff)}
+.card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:18px;box-shadow:var(--shadow)}
+.card+.card{margin-top:14px}
+.tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px}
+.tabs button{white-space:nowrap;padding:9px 14px;border-radius:11px;border:1px solid var(--line);
+  background:var(--card);color:var(--muted);font:inherit;font-weight:650;font-size:13.5px}
+.tabs button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+button{font:inherit;cursor:pointer}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:11px;
+  border:1px solid transparent;background:var(--accent);color:#fff;font-weight:700;font-size:14px}
+.btn:hover{filter:brightness(1.06)}
+.btn[disabled]{opacity:.45;cursor:not-allowed}
+.btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
+.btn.soft{background:var(--accent-soft);color:var(--accent-ink)}
+.btn.danger{background:var(--bad-soft);color:var(--bad)}
+.btn.sm{padding:7px 11px;font-size:12.5px;border-radius:9px}
+.btn.block{width:100%}
+input[type=text],input[type=number],input[type=password],input[type=datetime-local],select,textarea{
+  padding:10px 12px;border:1px solid var(--line);border-radius:10px;background:var(--bg);color:var(--ink);font:inherit;outline:none;width:100%}
+input:focus,select:focus,textarea:focus{border-color:var(--accent);box-shadow:0 0 0 3px var(--accent-soft)}
+label.f{display:block}label.f>span{display:block;font-weight:650;font-size:13px;margin-bottom:6px}
+.stats{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:12px}
+.stat{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:14px 16px;box-shadow:var(--shadow)}
+.stat b{display:block;font-size:26px;font-weight:750;letter-spacing:-.03em;font-variant-numeric:tabular-nums}
+.stat span{font-size:12px;color:var(--muted)}
+table{width:100%;border-collapse:collapse;font-size:13.5px}
+th,td{padding:9px 8px;text-align:left;border-bottom:1px solid var(--line);vertical-align:middle}
+th{font-size:12px;color:var(--muted);font-weight:650;white-space:nowrap}
+td.n,th.n{font-variant-numeric:tabular-nums}
+.scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 9px;border-radius:999px;font-size:11.5px;font-weight:700;white-space:nowrap}
+.badge.a{background:var(--accent-soft);color:var(--accent-ink)}
+.badge.g{background:var(--good-soft);color:var(--good)}
+.badge.w{background:var(--warn-soft);color:var(--warn)}
+.badge.b{background:var(--bad-soft);color:var(--bad)}
+.note{padding:11px 14px;border-radius:11px;font-size:13px}
+.note.a{background:var(--accent-soft);color:var(--accent-ink)}
+.note.w{background:var(--warn-soft);color:var(--warn)}
+.note.b{background:var(--bad-soft);color:var(--bad)}
+.note.g{background:var(--good-soft);color:var(--good)}
+.teams{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:14px}
+.team{border:1px solid var(--line);border-radius:14px;padding:14px;background:var(--card)}
+.team .hd{display:flex;align-items:center;justify-content:space-between;margin-bottom:10px}
+.mem{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
+.mem:first-of-type{border-top:0}
+.av{width:30px;height:30px;border-radius:10px;background:var(--accent-soft);color:var(--accent-ink);display:grid;place-items:center;font-weight:750;font-size:12px;flex:none}
+.av.lead{background:var(--accent);color:#fff}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:60;padding:11px 18px;border-radius:12px;
+  font-weight:650;font-size:13.5px;box-shadow:var(--shadow);background:var(--ink);color:var(--bg)}
+.gate{max-width:340px;margin:12vh auto 0}
+details.ans{margin-top:6px}
+details.ans summary{cursor:pointer;font-size:12.5px;color:var(--accent-ink)}
+details.ans .qa{border-top:1px dashed var(--line);padding-top:7px;margin-top:7px}
+details.ans .q{font-size:11.5px;color:var(--muted)}
+.demo{background:var(--warn-soft);color:var(--warn);font-size:12.5px;padding:9px 13px;border-radius:11px;margin-bottom:14px;font-weight:600}
+.spin{width:22px;height:22px;border:2.5px solid var(--line);border-top-color:var(--accent);border-radius:50%;animation:sp .7s linear infinite;margin:40px auto}
+@keyframes sp{to{transform:rotate(360deg)}}
+</style>
+</head>
+<body>
+<div class="wrap"><div id="app"><div class="spin"></div></div></div>
+
+<script>
+/* =====================================================================
+   1) 설정
+   ===================================================================== */
+const CONFIG = {
+  SUPABASE_URL: "https://lewiipqawxuzkpdlnlvv.supabase.co",
+  SUPABASE_ANON_KEY: "sb_publishable_FP6oITe8CQ03he_kSTz0Fw_ICUtGnZ9",
+  ADMIN_PIN: "708245",    // 관리자 페이지 접속 PIN — 원하는 숫자로 바꾸세요
+};
+
+const DEMO = !CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY;
+const $ = (s,r)=>(r||document).querySelector(s);
+const $$ = (s,r)=>Array.from((r||document).querySelectorAll(s));
+const esc = s=>String(s??"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#39;"}[c]));
+const pad2 = n=>String(n).padStart(2,"0");
+const initial = n=>String(n||"?").trim().slice(-2);
+const GENDER = {M:"남",F:"여",X:"-"};
+
+const DEFAULT_QUESTIONS = [
+  {id:"q1",label:"요즘 가장 자주 듣는 노래는?",placeholder:"가수 - 제목",type:"text"},
+  {id:"q2",label:"인생 음식 딱 하나만 고른다면?",placeholder:"예) 엄마표 김치찌개",type:"text"},
+  {id:"q3",label:"로또 1등에 당첨되면 가장 먼저 할 일은?",placeholder:"솔직하게 적어주세요",type:"text"},
+  {id:"q4",label:"나를 한 단어로 표현하면?",placeholder:"예) 잔잔한 파도",type:"text"},
+  {id:"q5",label:"최근에 가장 크게 웃었던 순간은?",placeholder:"짧게 적어주세요",type:"textarea"},
+];
+
+async function sb(path, opt={}){
+  const key = CONFIG.SUPABASE_ANON_KEY;
+  const send = withAuth => fetch(CONFIG.SUPABASE_URL.replace(/\/$/,"")+"/rest/v1/"+path,{
+    method:opt.method||"GET",
+    headers:{apikey:key,...(withAuth?{Authorization:"Bearer "+key}:{}),
+      "Content-Type":"application/json",...(opt.prefer?{Prefer:opt.prefer}:{})},
+    body:opt.body?JSON.stringify(opt.body):undefined});
+  // 구형 anon 키(JWT)와 신형 publishable 키 양쪽 모두 지원
+  let res = await send(true);
+  if(res.status===401) res = await send(false);
+  const text = await res.text();
+  if(!res.ok) throw new Error("서버 오류 ("+res.status+") "+text.slice(0,240));
+  return text?JSON.parse(text):null;
+}
+
+/* =====================================================================
+   2) 데모 데이터
+   ===================================================================== */
+const DEMO_DB = (()=>{
+  const A=(name,y,g,mbti,ls,a,i)=>({id:"a-"+name,name,phone4:"1234",birth_year:y,gender:g,mbti,leader_score:ls,
+    answers:{q1:a[0],q2:a[1],q3:a[2],q4:a[3],q5:a[4]},submitted:true,
+    submitted_at:new Date(Date.UTC(2026,8,1,1+i)).toISOString()});
+  const people=[
+    A("배현우",2000,"M","INTJ",3,["실리카겔 - 백역","마라탕","조용히 회사부터 그만둔다","계획형 인간","고양이가 문 여는 걸 배웠을 때"],0),
+    A("서예린",1999,"F","ISTJ",2,["아이유 - 밤편지","평양냉면","부모님 집 사드리기","성실한 거북이","동생이 넘어지며 춤춘 날"],1),
+    A("한소희",1998,"F","INFP",3,["검정치마 - 기다린 만큼","떡볶이","세계일주 티켓 예약","몽상가","친구 결혼식에서 축가 삑사리"],2),
+    A("최유진",1997,"F","ESTJ",4,["뉴진스 - Ditto","엄마표 김치찌개","적금 통장 만들기","추진력 갑","팀 회식에서 부장님 성대모사"],3),
+    A("박서연",1996,"F","ISFJ",3,["잔나비 - 주저하는 연인들을 위해","닭갈비","가족들 모아 발표","다정한 담요","강아지가 내 슬리퍼 물고 도망"],4),
+    A("윤채원",1995,"F","ISTP",2,["새소년 - 난춘","초밥","일단 아무한테도 말 안 함","무심한 편","동료가 회의 중 커피 쏟았을 때"],5),
+    A("김지훈",1994,"M","ENFP",5,["데이식스 - 예뻤어","곱창","친구들 다 불러서 파티","시끄러운 햇살","길에서 아는 사람 헛본 날"],6),
+    A("이도윤",1993,"M","INTP",2,["라디오헤드 - Creep","라멘","세금부터 계산한다","분석하는 사람","AI가 내 이름 틀리게 부를 때"],7),
+    A("강하늘",1992,"M","ENTJ",5,["임영웅 - 사랑은 늘 도망가","삼겹살","사업 계획서 작성","돌직구","조카가 나를 이모라 불렀을 때"],8),
+    A("정민서",1991,"F","INFJ",3,["아이브 - LOVE DIVE","월남쌈","조용한 시골집 알아보기","깊은 우물","친구 잠꼬대 녹음 들었을 때"],9),
+    A("임태호",1990,"M","ESFP",4,["싸이 - 챔피언","치킨","바로 퇴사 통보","분위기 메이커","노래방에서 마이크 부순 날"],10),
+    A("오준혁",1989,"M","ENFJ",4,["폴킴 - 모든 날, 모든 순간","된장찌개","부모님 여행 보내드리기","맏형 스타일","팀원이 내 자리에 곰인형 앉혀둔 날"],11),
+  ];
+  people.push({id:"a-미제출",name:"신입생",phone4:"9999",birth_year:null,gender:null,mbti:null,
+    leader_score:3,answers:{},submitted:false,submitted_at:null});
+  return {
+    settings:{id:1,event_title:"조 편성 & 조원 맞히기",form_open:true,reveal_at:null,
+      teams_published:false,team_size:4,questions:DEFAULT_QUESTIONS},
+    applicants:people, teams:[], team_members:[], guess_results:[],
+  };
+})();
+
+/* =====================================================================
+   3) 데이터 접근
+   ===================================================================== */
+const api = {
+  async settings(){
+    if(DEMO) return DEMO_DB.settings;
+    const r = await sb("settings?id=eq.1&select=*"); const s=r&&r[0];
+    if(!s) throw new Error("settings 행이 없습니다. schema.sql을 먼저 실행해주세요.");
+    if(!Array.isArray(s.questions)||!s.questions.length) s.questions=DEFAULT_QUESTIONS;
+    return s;
+  },
+  async saveSettings(patch){
+    if(DEMO){Object.assign(DEMO_DB.settings,patch);return DEMO_DB.settings;}
+    const r = await sb("settings?id=eq.1",{method:"PATCH",body:patch,prefer:"return=representation"});
+    return r[0];
+  },
+  async applicants(){
+    if(DEMO) return DEMO_DB.applicants.slice();
+    return await sb("applicants?select=*&order=created_at.asc");
+  },
+  async patchApplicant(id,patch){
+    if(DEMO){const a=DEMO_DB.applicants.find(x=>x.id===id);Object.assign(a,patch);return a;}
+    const r = await sb("applicants?id=eq."+id,{method:"PATCH",body:patch,prefer:"return=representation"});
+    return r[0];
+  },
+  async removeApplicant(id){
+    if(DEMO){
+      DEMO_DB.applicants=DEMO_DB.applicants.filter(a=>a.id!==id);
+      DEMO_DB.team_members=DEMO_DB.team_members.filter(m=>m.applicant_id!==id);return;
+    }
+    await sb("applicants?id=eq."+id,{method:"DELETE"});
+  },
+  async teams(){
+    if(DEMO) return {teams:DEMO_DB.teams.slice(),links:DEMO_DB.team_members.slice()};
+    const teams = await sb("teams?select=*&order=no.asc");
+    const links = teams.length ? await sb("team_members?select=team_id,applicant_id") : [];
+    return {teams,links};
+  },
+  async replaceTeams(plan){
+    if(DEMO){
+      DEMO_DB.teams = plan.map((t,i)=>({id:"t"+(i+1),no:t.no,leader_id:t.leader?t.leader.id:null}));
+      DEMO_DB.team_members = plan.flatMap((t,i)=>t.members.map(m=>({team_id:"t"+(i+1),applicant_id:m.id})));
+      DEMO_DB.guess_results=[]; return;
+    }
+    await sb("teams?no=gte.0",{method:"DELETE"});
+    const created = await sb("teams",{method:"POST",prefer:"return=representation",
+      body:plan.map(t=>({no:t.no,leader_id:t.leader?t.leader.id:null}))});
+    const rows=[];
+    created.sort((a,b)=>a.no-b.no).forEach(row=>{
+      const p = plan.find(x=>x.no===row.no);
+      p.members.forEach(m=>rows.push({team_id:row.id,applicant_id:m.id}));
+    });
+    if(rows.length) await sb("team_members",{method:"POST",body:rows});
+  },
+  async setLeader(teamId,applicantId){
+    if(DEMO){const t=DEMO_DB.teams.find(t=>t.id===teamId);t.leader_id=applicantId;return;}
+    await sb("teams?id=eq."+teamId,{method:"PATCH",body:{leader_id:applicantId}});
+  },
+  async moveMember(applicantId,fromTeamId,toTeamId){
+    if(DEMO){
+      DEMO_DB.team_members=DEMO_DB.team_members.filter(m=>!(m.applicant_id===applicantId&&m.team_id===fromTeamId));
+      DEMO_DB.team_members.push({team_id:toTeamId,applicant_id:applicantId});
+      const from=DEMO_DB.teams.find(t=>t.id===fromTeamId);
+      if(from&&from.leader_id===applicantId) from.leader_id=null;
+      return;
+    }
+    await sb("team_members?applicant_id=eq."+applicantId+"&team_id=eq."+fromTeamId,{method:"DELETE"});
+    await sb("team_members",{method:"POST",body:[{team_id:toTeamId,applicant_id:applicantId}]});
+    const t = await sb("teams?select=id,leader_id&id=eq."+fromTeamId);
+    if(t[0]&&t[0].leader_id===applicantId) await sb("teams?id=eq."+fromTeamId,{method:"PATCH",body:{leader_id:null}});
+  },
+  async results(){
+    if(DEMO) return DEMO_DB.guess_results.slice();
+    return await sb("guess_results?select=*");
+  },
+};
+
+/* =====================================================================
+   4) 조 편성 알고리즘
+     · 4명씩 (인원에 따라 3~5명)
+     · 각 조에 E 성향 최소 1명
+     · 나이는 가깝게, 단 동갑은 같은 조에 두지 않음
+     · 조장 = 조 안의 E 중 리더 성향 점수가 가장 높은 사람
+   ===================================================================== */
+const isE = p=>String(p.mbti||"").toUpperCase().startsWith("E");
+const yearsOf = t=>t.members.map(m=>m.birth_year).filter(Boolean);
+const avgYear = t=>{const y=yearsOf(t);return y.length?y.reduce((a,b)=>a+b,0)/y.length:0;};
+const rnd = n=>Math.floor(Math.random()*n);
+
+const W_SAME_AGE = 60;   // 동갑 페널티
+const W_NO_E     = 500;  // E 없는 조 페널티
+
+function teamCost(t){
+  const y=yearsOf(t); if(!y.length) return 0;
+  const spread=Math.max(...y)-Math.min(...y);
+  const dup=y.length-new Set(y).size;
+  return spread + dup*W_SAME_AGE + (t.members.some(isE)?0:W_NO_E);
+}
+const totalCost = ts=>ts.reduce((s,t)=>s+teamCost(t),0);
+
+function addCost(t,p){
+  const y=yearsOf(t);
+  const avg=y.length?y.reduce((a,b)=>a+b,0)/y.length:(p.birth_year||0);
+  let c=Math.abs((p.birth_year||avg)-avg);
+  if(p.birth_year&&y.includes(p.birth_year)) c+=W_SAME_AGE;
+  if(!t.members.some(isE)&&!isE(p)) c+=5;
+  return c;
+}
+
+function buildTeams(people,size){
+  const warnings=[];
+  const n=people.length;
+  if(n<2) return {teams:[],warnings:["제출을 마친 신청자가 2명 이상이어야 합니다."]};
+  const want=size||4;
+  let k=Math.max(1,Math.round(n/want));
+  if(n/k>want) k=Math.max(1,Math.ceil(n/want));   // 한 조가 희망 인원을 넘지 않도록
+  const sizes=new Array(k).fill(Math.floor(n/k));
+  for(let i=0;i<n%k;i++) sizes[i]++;
+
+  const byYoung=(a,b)=>(b.birth_year||0)-(a.birth_year||0);
+  const Es=people.filter(isE).sort(byYoung);
+  const rest=people.filter(p=>!isE(p)).sort(byYoung);
+  if(Es.length<k) warnings.push(`E 성향이 ${Es.length}명뿐입니다. 조 ${k}개 전부에 E를 넣을 수 없어 일부 조는 리더 성향 점수가 가장 높은 사람이 조장이 됩니다.`);
+
+  const teams=sizes.map((cap,i)=>({no:i+1,cap,members:[]}));
+  Es.slice(0,k).forEach((p,i)=>teams[i].members.push(p));
+  const pool=[...Es.slice(k),...rest].sort(byYoung);
+  for(const p of pool){
+    let best=null,bc=Infinity;
+    for(const t of teams){
+      if(t.members.length>=t.cap) continue;
+      const c=addCost(t,p);
+      if(c<bc){bc=c;best=t;}
+    }
+    (best||teams[0]).members.push(p);
+  }
+
+  // 지역 탐색: 두 사람을 바꿔보고 전체 비용이 줄면 유지
+  let cur=totalCost(teams);
+  for(let it=0;it<6000;it++){
+    const i=rnd(teams.length),j=rnd(teams.length);
+    if(i===j||!teams[i].members.length||!teams[j].members.length) continue;
+    const a=rnd(teams[i].members.length),b=rnd(teams[j].members.length);
+    const pa=teams[i].members[a],pb=teams[j].members[b];
+    teams[i].members[a]=pb;teams[j].members[b]=pa;
+    const next=totalCost(teams);
+    if(next<cur) cur=next; else {teams[i].members[a]=pa;teams[j].members[b]=pb;}
+  }
+
+  teams.sort((x,y)=>avgYear(y)-avgYear(x));
+  teams.forEach((t,i)=>{t.no=i+1;t.members.sort((a,b)=>(b.birth_year||0)-(a.birth_year||0));});
+  teams.forEach(t=>{
+    const cands=t.members.filter(isE);
+    const pool2=(cands.length?cands:t.members).slice().sort((a,b)=>
+      (b.leader_score||0)-(a.leader_score||0) || String(a.submitted_at||"").localeCompare(String(b.submitted_at||"")));
+    t.leader=pool2[0]||null;
+    if(!cands.length&&t.leader) warnings.push(`${t.no}조에는 E 성향이 없어 ${t.leader.name}님(리더 성향 ${t.leader.leader_score})을 조장으로 지정했습니다.`);
+    const y=yearsOf(t);
+    const dups=[...new Set(y.filter((v,i)=>y.indexOf(v)!==i))];
+    if(dups.length) warnings.push(`${t.no}조에 ${dups.join(", ")}년생이 겹칩니다. 인원 구성상 불가피한 경우입니다.`);
+  });
+  return {teams,warnings};
+}
+
+/* =====================================================================
+   5) 상태 & 렌더
+   ===================================================================== */
+const A = {ok:false,tab:"dash",settings:null,applicants:[],teams:[],links:[],results:[],plan:null,planWarn:[],q:"",loading:true};
+
+const submitted = ()=>A.applicants.filter(a=>a.submitted);
+const findA = id=>A.applicants.find(a=>a.id===id);
+const membersOf = tid=>A.links.filter(l=>l.team_id===tid).map(l=>findA(l.applicant_id)).filter(Boolean);
+
+function toast(msg,kind="ok"){
+  const el=document.createElement("div");
+  el.className="toast"; el.textContent=msg;
+  if(kind==="bad"){el.style.background="var(--bad)";el.style.color="#fff";}
+  document.body.appendChild(el); setTimeout(()=>el.remove(),2600);
+}
+
+function render(){
+  const app=$("#app");
+  if(!A.ok){app.innerHTML=viewGate();return;}
+  if(A.loading){app.innerHTML=`<div class="spin"></div>`;return;}
+  const tabs=[["dash","현황"],["people","신청자"],["teams","조 편성"],["questions","질문"],["settings","설정"],["rank","순위"]];
+  const views={dash:viewDash,people:viewPeople,teams:viewTeams,questions:viewQuestions,settings:viewSettings,rank:viewRank};
+  app.innerHTML=`
+    <header class="top">
+      <div class="brand"><div class="dot"></div><div>
+        <h1>관리자</h1><p class="tiny muted">${esc(A.settings.event_title||"")}</p></div></div>
+      <button class="btn ghost sm" data-act="reload">새로고침</button>
+    </header>
+    ${DEMO?`<div class="demo">데모 모드 · Supabase 정보를 넣기 전까지는 저장되지 않습니다. 조 편성/게임 흐름을 자유롭게 시험해보세요.</div>`:""}
+    <div class="tabs">${tabs.map(([k,l])=>`<button data-tab="${k}" aria-selected="${A.tab===k}">${l}</button>`).join("")}</div>
+    ${(views[A.tab]||viewDash)()}`;
+}
+
+function viewGate(){
+  return `<div class="card gate stack">
+    <div><h1>관리자 페이지</h1><p class="muted small" style="margin-top:6px">PIN을 입력해주세요.</p></div>
+    <input type="password" id="pin" placeholder="PIN" inputmode="numeric">
+    <button class="btn block" data-act="unlock">들어가기</button>
+  </div>`;
+}
+
+function viewDash(){
+  const all=A.applicants, sub=submitted();
+  const e=sub.filter(isE).length;
+  const years=sub.map(a=>a.birth_year).filter(Boolean).sort((a,b)=>a-b);
+  const range=years.length?`${years[0]} ~ ${years[years.length-1]}`:"-";
+  const dupYears=(()=>{const c={};years.forEach(y=>c[y]=(c[y]||0)+1);return Object.entries(c).filter(([,n])=>n>1);})();
+  const k=Math.max(1,Math.round(sub.length/(A.settings.team_size||4)));
+  return `
+    <div class="stats">
+      <div class="stat"><b>${all.length}</b><span>전체 신청자</span></div>
+      <div class="stat"><b>${sub.length}</b><span>최종 제출</span></div>
+      <div class="stat"><b>${all.length-sub.length}</b><span>작성 중</span></div>
+      <div class="stat"><b>${e} : ${sub.length-e}</b><span>E : I 비율</span></div>
+      <div class="stat"><b>${A.teams.length||k}</b><span>${A.teams.length?"편성된 조":"예상 조 수"}</span></div>
+      <div class="stat"><b>${A.settings.teams_published?"공개":"비공개"}</b><span>조 공개 상태</span></div>
+    </div>
+    <div class="card stack" style="margin-top:14px">
+      <h2>한눈에 보기</h2>
+      <table><tbody>
+        <tr><th>출생연도 범위</th><td>${range}</td></tr>
+        <tr><th>동갑 인원</th><td>${dupYears.length?dupYears.map(([y,n])=>`${y}년 ${n}명`).join(", "):"없음"}</td></tr>
+        <tr><th>조 공개 시각</th><td>${A.settings.reveal_at?esc(fmtLocal(A.settings.reveal_at)):"설정 안 됨 (확정 즉시 공개)"}</td></tr>
+        <tr><th>신청 접수</th><td>${A.settings.form_open?"열림":"마감"}</td></tr>
+      </tbody></table>
+      ${e<k?`<div class="note w">E 성향(${e}명)이 예상 조 수(${k}개)보다 적습니다. 모든 조에 E 조장을 두려면 제출자가 더 필요합니다.</div>`:""}
+    </div>`;
+}
+
+function viewPeople(){
+  const q=A.q.trim();
+  const rows=A.applicants.filter(a=>!q||String(a.name).includes(q)||String(a.mbti||"").toUpperCase().includes(q.toUpperCase()));
+  const qs=A.settings.questions||DEFAULT_QUESTIONS;
+  return `<div class="card stack">
+    <div class="row-between">
+      <h2>신청자 ${rows.length}명</h2>
+      <div class="row">
+        <input type="text" id="q" placeholder="이름 / MBTI 검색" value="${esc(A.q)}" style="width:180px">
+        <button class="btn soft sm" data-act="csv">CSV 내려받기</button>
+      </div>
+    </div>
+    <div class="scroll"><table>
+      <thead><tr><th>이름</th><th class="n">출생</th><th>성별</th><th>MBTI</th><th class="n">리더</th><th>상태</th><th>답변</th><th></th></tr></thead>
+      <tbody>
+      ${rows.map(a=>`<tr>
+        <td><b>${esc(a.name)}</b><div class="tiny muted">${esc(a.phone4)}</div></td>
+        <td class="n">${a.birth_year||"-"}</td>
+        <td>${GENDER[a.gender]||"-"}</td>
+        <td>${a.mbti?`<span class="badge ${isE(a)?"a":""}">${esc(a.mbti)}</span>`:"-"}</td>
+        <td class="n">${a.leader_score??"-"}</td>
+        <td>${a.submitted?`<span class="badge g">제출</span>`:`<span class="badge w">작성 중</span>`}</td>
+        <td style="min-width:180px">${a.submitted?`<details class="ans"><summary>보기</summary>
+            ${qs.map(qq=>`<div class="qa"><div class="q">${esc(qq.label)}</div><div>${esc((a.answers||{})[qq.id]||"-")}</div></div>`).join("")}
+          </details>`:"-"}</td>
+        <td><div class="row" style="gap:6px;flex-wrap:nowrap">
+          ${a.submitted?`<button class="btn ghost sm" data-unlock="${a.id}">제출 해제</button>`:""}
+          <button class="btn danger sm" data-del="${a.id}">삭제</button></div></td>
+      </tr>`).join("")||`<tr><td colspan="8" class="muted">신청자가 없습니다.</td></tr>`}
+      </tbody></table></div>
+  </div>`;
+}
+
+function viewTeams(){
+  const sub=submitted();
+  const saved=A.teams.length>0;
+  const plan=A.plan;
+  return `
+  <div class="card stack">
+    <div class="row-between">
+      <div><h2>자동 조 편성</h2>
+        <p class="small muted" style="margin-top:4px">제출 완료 ${sub.length}명 · 각 조에 E 최소 1명, 나이는 가깝게, 동갑은 최대한 다른 조로</p></div>
+      <div class="row">
+        <label class="f" style="width:110px"><span>조당 인원</span>
+          <input type="number" id="tsize" min="2" max="8" value="${A.settings.team_size||4}"></label>
+        <button class="btn" data-act="build" style="align-self:end">자동 편성 실행</button>
+      </div>
+    </div>
+    ${plan?`
+      ${A.planWarn.length?`<div class="note w">${A.planWarn.map(w=>esc(w)).join("<br>")}</div>`:`<div class="note g">모든 조에 E 조장이 배정되었고 동갑이 겹치지 않습니다.</div>`}
+      <div class="teams">${plan.map(t=>`
+        <div class="team">
+          <div class="hd"><h3>${t.no}조</h3><span class="badge a">${t.members.length}명</span></div>
+          ${t.members.map(m=>`<div class="mem">
+            <div class="av ${t.leader&&m.id===t.leader.id?"lead":""}">${esc(initial(m.name))}</div>
+            <div class="grow"><div style="font-weight:650">${esc(m.name)} ${t.leader&&m.id===t.leader.id?'<span class="badge a">조장</span>':""}</div>
+              <div class="tiny muted">${m.birth_year||"-"}년 · ${esc(m.mbti||"-")} · 리더 ${m.leader_score??"-"}</div></div>
+          </div>`).join("")}
+        </div>`).join("")}</div>
+      <div class="row">
+        <button class="btn" data-act="save-plan">이 편성으로 확정하기</button>
+        <button class="btn ghost" data-act="build">다시 편성</button>
+        <button class="btn ghost" data-act="drop-plan">취소</button>
+      </div>
+      ${saved?`<div class="note w">확정하면 기존 조 편성과 게임 기록이 모두 대체됩니다.</div>`:""}
+    `:""}
+  </div>
+
+  ${saved?`
+  <div class="card stack">
+    <div class="row-between">
+      <h2>확정된 조 (${A.teams.length}개)</h2>
+      <div class="row">
+        <span class="badge ${A.settings.teams_published?"g":"w"}">${A.settings.teams_published?"신청자에게 공개 중":"비공개"}</span>
+        <button class="btn ${A.settings.teams_published?"ghost":""} sm" data-act="toggle-publish">
+          ${A.settings.teams_published?"공개 중단":"지금 공개하기"}</button>
+      </div>
+    </div>
+    <p class="small muted">조원을 다른 조로 옮기거나 조장을 바꿀 수 있습니다. 변경은 즉시 저장됩니다.</p>
+    <div class="teams">${A.teams.map(t=>{
+      const ms=membersOf(t.id);
+      return `<div class="team">
+        <div class="hd"><h3>${t.no}조</h3><span class="badge a">${ms.length}명</span></div>
+        ${ms.map(m=>`<div class="mem">
+          <div class="av ${t.leader_id===m.id?"lead":""}">${esc(initial(m.name))}</div>
+          <div class="grow"><div style="font-weight:650">${esc(m.name)} ${t.leader_id===m.id?'<span class="badge a">조장</span>':""}</div>
+            <div class="tiny muted">${m.birth_year||"-"}년 · ${esc(m.mbti||"-")} · 리더 ${m.leader_score??"-"}</div>
+            <div class="row" style="gap:6px;margin-top:5px">
+              ${t.leader_id===m.id?"":`<button class="btn ghost sm" data-lead="${t.id}|${m.id}">조장 지정</button>`}
+              <select data-move="${m.id}|${t.id}" style="width:auto;padding:5px 8px;font-size:12px">
+                <option value="">조 이동…</option>
+                ${A.teams.filter(x=>x.id!==t.id).map(x=>`<option value="${x.id}">${x.no}조로</option>`).join("")}
+              </select>
+            </div></div>
+        </div>`).join("")||`<p class="tiny muted">조원이 없습니다.</p>`}
+      </div>`;}).join("")}</div>
+    ${(()=>{const assigned=new Set(A.links.map(l=>l.applicant_id));
+      const left=submitted().filter(a=>!assigned.has(a.id));
+      return left.length?`<div class="note w">아직 어느 조에도 없는 제출자: ${left.map(a=>esc(a.name)).join(", ")} — 자동 편성을 다시 실행하거나 조 이동으로 배정해주세요.</div>`:"";})()}
+  </div>`:`<div class="card"><p class="muted small">아직 확정된 조가 없습니다. 위에서 자동 편성을 실행해주세요.</p></div>`}`;
+}
+
+function viewQuestions(){
+  const qs=A.settings.questions||DEFAULT_QUESTIONS;
+  return `<div class="card stack">
+    <div><h2>게임 질문</h2><p class="small muted" style="margin-top:4px">신청자가 답하고, 조장이 이 답변을 보고 조원을 맞힙니다. 이름·출생연도·성별·MBTI·리더 성향은 기본 항목이라 여기에 없습니다.</p></div>
+    ${qs.map((q,i)=>`
+      <div class="card" style="box-shadow:none;background:var(--bg)">
+        <div class="row-between" style="margin-bottom:8px"><h3>질문 ${i+1}</h3>
+          <div class="row" style="gap:6px">
+            <button class="btn ghost sm" data-qmove="${i}|-1" ${i===0?"disabled":""}>↑</button>
+            <button class="btn ghost sm" data-qmove="${i}|1" ${i===qs.length-1?"disabled":""}>↓</button>
+            <button class="btn danger sm" data-qdel="${i}">삭제</button>
+          </div></div>
+        <div class="stack">
+          <label class="f"><span>질문</span><input type="text" data-qf="${i}|label" value="${esc(q.label)}"></label>
+          <label class="f"><span>입력 도움말</span><input type="text" data-qf="${i}|placeholder" value="${esc(q.placeholder||"")}"></label>
+          <label class="f"><span>형식</span>
+            <select data-qf="${i}|type">
+              <option value="text" ${q.type!=="textarea"?"selected":""}>한 줄</option>
+              <option value="textarea" ${q.type==="textarea"?"selected":""}>여러 줄</option>
+            </select></label>
+        </div>
+      </div>`).join("")}
+    <div class="row">
+      <button class="btn ghost" data-act="qadd">질문 추가</button>
+      <button class="btn" data-act="qsave">질문 저장</button>
+    </div>
+  </div>`;
+}
+
+function viewSettings(){
+  const s=A.settings;
+  return `<div class="card stack">
+    <h2>행사 설정</h2>
+    <label class="f"><span>행사 이름</span><input type="text" id="s-title" value="${esc(s.event_title||"")}"></label>
+    <label class="f"><span>조 공개 시각 (비우면 “확정 즉시 공개”)</span>
+      <input type="datetime-local" id="s-reveal" value="${s.reveal_at?toLocalInput(s.reveal_at):""}"></label>
+    <div class="row">
+      <button class="btn ghost" data-act="reveal-10">10분 뒤</button>
+      <button class="btn ghost" data-act="reveal-60">1시간 뒤</button>
+      <button class="btn ghost" data-act="reveal-clear">시각 지우기</button>
+    </div>
+    <label class="f"><span>신청 접수</span>
+      <select id="s-open"><option value="1" ${s.form_open?"selected":""}>열림</option><option value="0" ${!s.form_open?"selected":""}>마감</option></select></label>
+    <label class="f"><span>조 공개</span>
+      <select id="s-pub"><option value="1" ${s.teams_published?"selected":""}>공개</option><option value="0" ${!s.teams_published?"selected":""}>비공개</option></select></label>
+    <button class="btn" data-act="ssave">설정 저장</button>
+    <div class="note a">공개 시각을 정해두면, 신청자 화면에 카운트다운이 뜨고 그 시각이 되면 자동으로 조가 열립니다. “조 공개”가 비공개면 시각과 관계없이 보이지 않습니다.</div>
+  </div>`;
+}
+
+function viewRank(){
+  const best=new Map();
+  for(const r of A.results.filter(r=>r.cleared)){
+    const c=best.get(r.leader_id);
+    if(!c||r.attempts<c.attempts||(r.attempts===c.attempts&&(r.duration_ms??1e9)<(c.duration_ms??1e9))) best.set(r.leader_id,r);
+  }
+  const rows=Array.from(best.values()).sort((a,b)=>a.attempts-b.attempts||(a.duration_ms??1e9)-(b.duration_ms??1e9));
+  const tno=id=>{const t=A.teams.find(t=>t.id===id);return t?t.no+"조":"-";};
+  const tried=new Set(A.results.map(r=>r.leader_id));
+  return `<div class="card stack">
+    <div class="row-between"><h2>조장 순위</h2><span class="badge a">${rows.length}명 전원 정답</span></div>
+    <div class="scroll"><table>
+      <thead><tr><th class="n">등수</th><th>조장</th><th>조</th><th class="n">시도</th><th class="n">시간</th><th>완료</th></tr></thead>
+      <tbody>${rows.map((r,i)=>`<tr>
+        <td class="n"><b>${i+1}등</b></td><td>${esc((findA(r.leader_id)||{}).name||"?")}</td>
+        <td>${tno(r.team_id)}</td><td class="n">${r.attempts}회</td><td class="n">${fmtDur(r.duration_ms)}</td>
+        <td class="tiny muted">${r.finished_at?esc(fmtLocal(r.finished_at)):"-"}</td></tr>`).join("")
+        ||`<tr><td colspan="6" class="muted">아직 전원을 맞힌 조장이 없습니다.</td></tr>`}</tbody>
+    </table></div>
+    <p class="small muted">시도한 조장 ${tried.size}명 · 전체 시도 ${A.results.length}회</p>
+  </div>`;
+}
+
+/* =====================================================================
+   6) 이벤트
+   ===================================================================== */
+function fmtDur(ms){if(ms==null)return "-";const s=Math.round(ms/1000);return Math.floor(s/60)+"분 "+pad2(s%60)+"초";}
+function fmtLocal(iso){const d=new Date(iso);return `${d.getFullYear()}. ${d.getMonth()+1}. ${d.getDate()}. ${pad2(d.getHours())}:${pad2(d.getMinutes())}`;}
+function toLocalInput(iso){const d=new Date(iso);return `${d.getFullYear()}-${pad2(d.getMonth()+1)}-${pad2(d.getDate())}T${pad2(d.getHours())}:${pad2(d.getMinutes())}`;}
+
+async function loadAll(){
+  A.loading=true; render();
+  A.settings=await api.settings();
+  A.applicants=await api.applicants();
+  const t=await api.teams(); A.teams=t.teams; A.links=t.links;
+  A.results=await api.results();
+  A.loading=false; render();
+}
+
+document.addEventListener("click",async e=>{
+  const tab=e.target.closest("[data-tab]");
+  if(tab){A.tab=tab.dataset.tab;A.q="";render();return;}
+  const lead=e.target.closest("[data-lead]");
+  if(lead){const [tid,aid]=lead.dataset.lead.split("|");
+    try{await api.setLeader(tid,aid);await loadAll();toast("조장을 변경했습니다.");}catch(err){toast(err.message,"bad");}return;}
+  const del=e.target.closest("[data-del]");
+  if(del){if(!confirm("이 신청자를 삭제할까요? 되돌릴 수 없습니다."))return;
+    try{await api.removeApplicant(del.dataset.del);await loadAll();toast("삭제했습니다.");}catch(err){toast(err.message,"bad");}return;}
+  const unl=e.target.closest("[data-unlock]");
+  if(unl){try{await api.patchApplicant(unl.dataset.unlock,{submitted:false});await loadAll();toast("제출을 해제했습니다. 본인이 다시 수정할 수 있습니다.");}catch(err){toast(err.message,"bad");}return;}
+  const qmv=e.target.closest("[data-qmove]");
+  if(qmv){const [i,d]=qmv.dataset.qmove.split("|").map(Number);
+    const qs=collectQuestions(); const j=i+d;
+    if(j<0||j>=qs.length)return;
+    [qs[i],qs[j]]=[qs[j],qs[i]]; A.settings.questions=qs; render(); return;}
+  const qdl=e.target.closest("[data-qdel]");
+  if(qdl){const qs=collectQuestions(); qs.splice(Number(qdl.dataset.qdel),1); A.settings.questions=qs; render(); return;}
+
+  const btn=e.target.closest("[data-act]"); if(!btn) return;
+  const act=btn.dataset.act;
+  try{
+    if(act==="unlock"){
+      if($("#pin").value.trim()!==String(CONFIG.ADMIN_PIN)) return toast("PIN이 올바르지 않습니다.","bad");
+      A.ok=true; await loadAll(); return;
+    }
+    if(act==="reload"){await loadAll();toast("최신 데이터를 불러왔습니다.");}
+    else if(act==="csv") downloadCsv();
+    else if(act==="build"){
+      const size=Number(($("#tsize")||{}).value||A.settings.team_size||4);
+      const r=buildTeams(submitted().map(x=>({...x})),size);
+      A.plan=r.teams; A.planWarn=r.warnings; A.settings.team_size=size; render();
+    }
+    else if(act==="drop-plan"){A.plan=null;A.planWarn=[];render();}
+    else if(act==="save-plan"){
+      if(!A.plan) return;
+      if(!confirm("이 편성으로 확정할까요? 기존 조 편성과 게임 기록은 대체됩니다."))return;
+      await api.replaceTeams(A.plan);
+      await api.saveSettings({team_size:A.settings.team_size});
+      A.plan=null;A.planWarn=[]; await loadAll(); toast("조 편성을 확정했습니다.");
+    }
+    else if(act==="toggle-publish"){
+      const next=!A.settings.teams_published;
+      await api.saveSettings({teams_published:next}); await loadAll();
+      toast(next?"신청자에게 공개했습니다.":"공개를 중단했습니다.");
+    }
+    else if(act==="qadd"){
+      const qs=collectQuestions();
+      qs.push({id:"q"+Date.now().toString(36),label:"새 질문",placeholder:"",type:"text"});
+      A.settings.questions=qs; render();
+    }
+    else if(act==="qsave"){
+      const qs=collectQuestions();
+      if(qs.some(q=>!q.label.trim())) return toast("빈 질문이 있습니다.","bad");
+      await api.saveSettings({questions:qs}); await loadAll(); toast("질문을 저장했습니다.");
+    }
+    else if(act==="reveal-10"||act==="reveal-60"){
+      const m=act==="reveal-10"?10:60;
+      $("#s-reveal").value=toLocalInput(new Date(Date.now()+m*60000).toISOString());
+    }
+    else if(act==="reveal-clear"){$("#s-reveal").value="";}
+    else if(act==="ssave"){
+      const raw=$("#s-reveal").value;
+      await api.saveSettings({
+        event_title:$("#s-title").value.trim()||"조 편성 & 조원 맞히기",
+        reveal_at: raw?new Date(raw).toISOString():null,
+        form_open: $("#s-open").value==="1",
+        teams_published: $("#s-pub").value==="1",
+      });
+      await loadAll(); toast("설정을 저장했습니다.");
+    }
+  }catch(err){toast(err.message||String(err),"bad");}
+});
+
+document.addEventListener("change",async e=>{
+  const mv=e.target.closest("[data-move]");
+  if(mv&&e.target.value){
+    const [aid,from]=mv.dataset.move.split("|");
+    try{await api.moveMember(aid,from,e.target.value);await loadAll();toast("조를 옮겼습니다.");}
+    catch(err){toast(err.message,"bad");}
+  }
+});
+
+document.addEventListener("input",e=>{
+  if(e.target.id==="q"){A.q=e.target.value;render();$("#q").focus();$("#q").setSelectionRange(A.q.length,A.q.length);}
+});
+
+document.addEventListener("keydown",e=>{
+  if(e.key==="Enter"&&e.target.id==="pin"){e.preventDefault();$('[data-act="unlock"]').click();}
+});
+
+function collectQuestions(){
+  const qs=(A.settings.questions||DEFAULT_QUESTIONS).map(q=>({...q}));
+  $$("[data-qf]").forEach(el=>{
+    const [i,f]=el.dataset.qf.split("|");
+    if(qs[Number(i)]) qs[Number(i)][f]=el.value;
+  });
+  return qs;
+}
+
+function downloadCsv(){
+  const qs=A.settings.questions||DEFAULT_QUESTIONS;
+  const head=["이름","전화뒷자리","출생연도","성별","MBTI","리더성향","제출","제출시각","조",...qs.map(q=>q.label)];
+  const teamOf=id=>{const l=A.links.find(l=>l.applicant_id===id);if(!l)return "";
+    const t=A.teams.find(t=>t.id===l.team_id);return t?(t.leader_id===id?t.no+"조(조장)":t.no+"조"):"";};
+  const rows=A.applicants.map(a=>[a.name,a.phone4,a.birth_year||"",GENDER[a.gender]||"",a.mbti||"",a.leader_score??"",
+    a.submitted?"O":"X",a.submitted_at?fmtLocal(a.submitted_at):"",teamOf(a.id),
+    ...qs.map(q=>(a.answers||{})[q.id]||"")]);
+  const csv=[head,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\r\n");
+  const blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"});
+  const url=URL.createObjectURL(blob);
+  const a=document.createElement("a");
+  a.href=url; a.download="신청자_"+new Date().toISOString().slice(0,10)+".csv";
+  document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(()=>URL.revokeObjectURL(url),1000);
+}
+
+render();
+</script>
+</body>
+</html>
