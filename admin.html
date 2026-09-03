@@ -7,17 +7,19 @@
 <meta name="robots" content="noindex,nofollow">
 <style>
 :root{
-  --bg:#f5f6f9; --card:#fff; --ink:#171826; --muted:#6a6d80; --line:#e4e6ee;
-  --accent:#3f5ae0; --accent-soft:#ecefff; --accent-ink:#2c43c0;
-  --good:#12855f; --good-soft:#e2f5ee; --warn:#a95c14; --warn-soft:#fcf0e0;
-  --bad:#c0364a; --bad-soft:#fdeaee; --shadow:0 1px 2px rgba(20,20,50,.05),0 8px 24px rgba(20,20,50,.05);
+  --bg:#fdf5f8; --card:#ffffff; --ink:#2a1922; --muted:#8b6b78; --line:#f4dde7;
+  --accent:#d93b7d; --accent2:#f472b6; --on-accent:#ffffff;
+  --accent-soft:#fdeaf3; --accent-ink:#ad2660;
+  --good:#0f7f66; --good-soft:#dff4ef; --warn:#b0561f; --warn-soft:#fdeee1;
+  --bad:#c92a5e; --bad-soft:#fde8ef; --shadow:0 1px 2px rgba(80,20,50,.05),0 8px 24px rgba(120,30,70,.08);
 }
 @media (prefers-color-scheme: dark){
   :root{
-    --bg:#101220; --card:#1a1d2e; --ink:#eceef8; --muted:#989cb4; --line:#292d42;
-    --accent:#93a4ff; --accent-soft:#212747; --accent-ink:#b9c4ff;
-    --good:#5fd6a8; --good-soft:#153229; --warn:#eda869; --warn-soft:#35271a;
-    --bad:#ff8497; --bad-soft:#391e26; --shadow:0 1px 2px rgba(0,0,0,.3),0 10px 30px rgba(0,0,0,.25);
+    --bg:#1a1016; --card:#241821; --ink:#f8ecf2; --muted:#b394a3; --line:#3c2833;
+    --accent:#ff8ec0; --accent2:#ffb3d4; --on-accent:#2b1019;
+    --accent-soft:#3b2130; --accent-ink:#ffb0d3;
+    --good:#5fd6ac; --good-soft:#12332c; --warn:#f0a570; --warn-soft:#38271a;
+    --bad:#ff86ab; --bad-soft:#3d1c2a; --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 30px rgba(0,0,0,.3);
   }
 }
 *{box-sizing:border-box}
@@ -34,16 +36,16 @@ p{margin:0}
 .grow{flex:1}
 header.top{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:16px}
 .brand{display:flex;align-items:center;gap:9px}
-.dot{width:26px;height:26px;border-radius:9px;background:linear-gradient(140deg,var(--accent),#7d8cff)}
+.dot{width:26px;height:26px;border-radius:9px;background:linear-gradient(140deg,var(--accent),var(--accent2))}
 .card{background:var(--card);border:1px solid var(--line);border-radius:15px;padding:18px;box-shadow:var(--shadow)}
 .card+.card{margin-top:14px}
 .tabs{display:flex;gap:6px;overflow-x:auto;padding-bottom:4px;margin-bottom:16px}
 .tabs button{white-space:nowrap;padding:9px 14px;border-radius:11px;border:1px solid var(--line);
   background:var(--card);color:var(--muted);font:inherit;font-weight:650;font-size:13.5px}
-.tabs button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:#fff}
+.tabs button[aria-selected="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
 button{font:inherit;cursor:pointer}
 .btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:10px 16px;border-radius:11px;
-  border:1px solid transparent;background:var(--accent);color:#fff;font-weight:700;font-size:14px}
+  border:1px solid transparent;background:var(--accent);color:var(--on-accent);font-weight:700;font-size:14px}
 .btn:hover{filter:brightness(1.06)}
 .btn[disabled]{opacity:.45;cursor:not-allowed}
 .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
@@ -80,7 +82,7 @@ td.n,th.n{font-variant-numeric:tabular-nums}
 .mem{display:flex;align-items:center;gap:8px;padding:8px 0;border-top:1px solid var(--line)}
 .mem:first-of-type{border-top:0}
 .av{width:30px;height:30px;border-radius:10px;background:var(--accent-soft);color:var(--accent-ink);display:grid;place-items:center;font-weight:750;font-size:12px;flex:none}
-.av.lead{background:var(--accent);color:#fff}
+.av.lead{background:var(--accent);color:var(--on-accent)}
 .toast{position:fixed;left:50%;transform:translateX(-50%);bottom:24px;z-index:60;padding:11px 18px;border-radius:12px;
   font-weight:650;font-size:13.5px;box-shadow:var(--shadow);background:var(--ink);color:var(--bg)}
 .gate{max-width:340px;margin:12vh auto 0}
@@ -103,7 +105,7 @@ details.ans .q{font-size:11.5px;color:var(--muted)}
 const CONFIG = {
   SUPABASE_URL: "https://lewiipqawxuzkpdlnlvv.supabase.co",
   SUPABASE_ANON_KEY: "sb_publishable_FP6oITe8CQ03he_kSTz0Fw_ICUtGnZ9",
-  ADMIN_PIN: "991111",    // 관리자 페이지 접속 PIN — 원하는 숫자로 바꾸세요
+  ADMIN_PIN: "708245",    // 관리자 페이지 접속 PIN — 원하는 숫자로 바꾸세요
 };
 
 const DEMO = !CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY;
@@ -121,6 +123,51 @@ const DEFAULT_QUESTIONS = [
   {id:"q4",label:"나를 한 단어로 표현하면?",placeholder:"예) 잔잔한 파도",type:"text"},
   {id:"q5",label:"최근에 가장 크게 웃었던 순간은?",placeholder:"짧게 적어주세요",type:"textarea"},
 ];
+
+const DEFAULT_TOPICS = [
+  "여기 오늘 어떻게 오게 되셨어요?","요즘 휴대폰에서 제일 자주 여는 앱은?",
+  "최근에 산 것 중에 제일 잘 샀다 싶은 것","주말에는 보통 뭐 하면서 보내세요?",
+  "인생 영화나 드라마 딱 하나 고른다면?","최근에 다녀온 곳 중에 또 가고 싶은 데",
+  "어릴 때 장래희망은 뭐였어요?","돈이랑 시간이 무한하다면 뭐부터 하실래요?",
+  "나만 아는 맛집 하나만 풀어주세요","최근에 새로 시작한 것이 있다면?",
+  "스트레스 풀리는 나만의 방법","지금 배우고 싶은 게 있다면 뭐예요?",
+  "여행 갈 때 계획형인가요 즉흥형인가요?","요즘 나를 웃게 하는 사소한 것",
+  "이 자리에서 한 명에게 궁금한 거 물어보기",
+];
+
+/* 역할 정의 — 첫 번째는 항상 조장. index.html과 동일하게 유지하세요. */
+const ROLES = [
+  {key:"host", emoji:"🎙", name:"대화 주도자"},
+  {key:"timer", emoji:"⏱", name:"타임키퍼"},
+  {key:"photo", emoji:"📸", name:"사진 담당"},
+  {key:"react", emoji:"🎉", name:"리액션 담당"},
+  {key:"note", emoji:"📝", name:"기록 담당"},
+];
+function seeded(seedStr){
+  let h=2166136261;
+  for(const ch of String(seedStr)) h=Math.imul(h^ch.charCodeAt(0),16777619);
+  return ()=>{h=Math.imul(h^(h>>>15),2246822507);h=Math.imul(h^(h>>>13),3266489909);return ((h^=h>>>16)>>>0)/4294967296;};
+}
+function roleMapFor(team,members){
+  const map={};
+  if(team.leader_id) map[team.leader_id]=ROLES[0];
+  const others=members.filter(m=>m.id!==team.leader_id).slice().sort((a,b)=>String(a.id).localeCompare(String(b.id)));
+  const rnd=seeded(team.id);
+  for(let i=others.length-1;i>0;i--){const j=Math.floor(rnd()*(i+1));[others[i],others[j]]=[others[j],others[i]];}
+  const pool=ROLES.slice(1);
+  others.forEach((m,i)=>{map[m.id]=pool[i%pool.length];});
+  return map;
+}
+function gameWindow(){
+  const s=A.settings||{};
+  if(!s.game_started_at) return {state:"waiting"};
+  const start=new Date(s.game_started_at).getTime();
+  const end=start+(s.game_duration_min||10)*60000;
+  const now=Date.now();
+  if(now<start) return {state:"waiting",start,end};
+  if(now<end) return {state:"running",start,end,left:end-now};
+  return {state:"ended",start,end};
+}
 
 async function sb(path, opt={}){
   const key = CONFIG.SUPABASE_ANON_KEY;
@@ -162,7 +209,8 @@ const DEMO_DB = (()=>{
     leader_score:3,answers:{},submitted:false,submitted_at:null});
   return {
     settings:{id:1,event_title:"조 편성 & 조원 맞히기",form_open:true,reveal_at:null,
-      teams_published:false,team_size:4,questions:DEFAULT_QUESTIONS},
+      teams_published:false,team_size:4,questions:DEFAULT_QUESTIONS,topics:DEFAULT_TOPICS,
+      game_started_at:null,game_duration_min:10},
     applicants:people, teams:[], team_members:[], guess_results:[],
   };
 })();
@@ -176,6 +224,8 @@ const api = {
     const r = await sb("settings?id=eq.1&select=*"); const s=r&&r[0];
     if(!s) throw new Error("settings 행이 없습니다. schema.sql을 먼저 실행해주세요.");
     if(!Array.isArray(s.questions)||!s.questions.length) s.questions=DEFAULT_QUESTIONS;
+    if(!Array.isArray(s.topics)||!s.topics.length) s.topics=DEFAULT_TOPICS;
+    if(!s.game_duration_min) s.game_duration_min=10;
     return s;
   },
   async saveSettings(patch){
@@ -283,6 +333,7 @@ function buildTeams(people,size){
   const want=size||4;
   let k=Math.max(1,Math.round(n/want));
   if(n/k>want) k=Math.max(1,Math.ceil(n/want));   // 한 조가 희망 인원을 넘지 않도록
+  while(k>1 && Math.floor(n/k)<3) k--;            // 2명 이하 조가 생기지 않도록 (3명씩이라도 묶기)
   const sizes=new Array(k).fill(Math.floor(n/k));
   for(let i=0;i<n%k;i++) sizes[i]++;
 
@@ -343,7 +394,7 @@ const membersOf = tid=>A.links.filter(l=>l.team_id===tid).map(l=>findA(l.applica
 function toast(msg,kind="ok"){
   const el=document.createElement("div");
   el.className="toast"; el.textContent=msg;
-  if(kind==="bad"){el.style.background="var(--bad)";el.style.color="#fff";}
+  if(kind==="bad"){el.style.background="var(--bad)";el.style.color="var(--on-accent)";}
   document.body.appendChild(el); setTimeout(()=>el.remove(),2600);
 }
 
@@ -351,8 +402,8 @@ function render(){
   const app=$("#app");
   if(!A.ok){app.innerHTML=viewGate();return;}
   if(A.loading){app.innerHTML=`<div class="spin"></div>`;return;}
-  const tabs=[["dash","현황"],["people","신청자"],["teams","조 편성"],["questions","질문"],["settings","설정"],["rank","순위"]];
-  const views={dash:viewDash,people:viewPeople,teams:viewTeams,questions:viewQuestions,settings:viewSettings,rank:viewRank};
+  const tabs=[["dash","현황"],["people","신청자"],["teams","조 편성"],["live","게임 진행"],["questions","질문·주제"],["settings","설정"],["rank","순위"]];
+  const views={dash:viewDash,people:viewPeople,teams:viewTeams,live:viewLive,questions:viewQuestions,settings:viewSettings,rank:viewRank};
   app.innerHTML=`
     <header class="top">
       <div class="brand"><div class="dot"></div><div>
@@ -362,7 +413,25 @@ function render(){
     ${DEMO?`<div class="demo">데모 모드 · Supabase 정보를 넣기 전까지는 저장되지 않습니다. 조 편성/게임 흐름을 자유롭게 시험해보세요.</div>`:""}
     <div class="tabs">${tabs.map(([k,l])=>`<button data-tab="${k}" aria-selected="${A.tab===k}">${l}</button>`).join("")}</div>
     ${(views[A.tab]||viewDash)()}`;
+  paintClocks();
 }
+
+let lastGameState="";
+function paintClocks(){
+  const w=gameWindow();
+  $$("[data-clock]").forEach(el=>{
+    if(w.state==="running"){
+      const s=Math.max(0,Math.floor(w.left/1000));
+      el.textContent=pad2(Math.floor(s/60))+":"+pad2(s%60);
+    } else el.textContent = w.state==="ended" ? "종료" : "대기";
+  });
+}
+setInterval(()=>{
+  if(!A.ok||!A.settings) return;
+  paintClocks();
+  const st=gameWindow().state;
+  if(st!==lastGameState){ lastGameState=st; if(A.tab==="live"||A.tab==="rank") loadAll(); }
+},1000);
 
 function viewGate(){
   return `<div class="card gate stack">
@@ -502,6 +571,80 @@ function viewTeams(){
   </div>`:`<div class="card"><p class="muted small">아직 확정된 조가 없습니다. 위에서 자동 편성을 실행해주세요.</p></div>`}`;
 }
 
+function viewLive(){
+  const w=gameWindow();
+  const s=A.settings;
+  const saved=A.teams.length>0;
+  const since=s.game_started_at?new Date(s.game_started_at).getTime():0;
+  const rs=A.results.filter(r=>!since||!r.finished_at||new Date(r.finished_at).getTime()>=since);
+  const bestOf=lid=>rs.filter(r=>r.leader_id===lid&&r.cleared)
+    .sort((a,b)=>(a.duration_ms??1e9)-(b.duration_ms??1e9))[0]||null;
+  const rows=A.teams.map(t=>({t,best:bestOf(t.leader_id),tries:rs.filter(r=>r.leader_id===t.leader_id).length}));
+  const finished=rows.filter(r=>r.best).sort((a,b)=>(a.best.duration_ms??1e9)-(b.best.duration_ms??1e9));
+  const rankOf=t=>{const i=finished.findIndex(x=>x.t.id===t.id);return i<0?null:i+1;};
+  const stateLabel={waiting:"대기 중",running:"진행 중",ended:"종료됨"}[w.state];
+  const stateBadge={waiting:"w",running:"g",ended:"a"}[w.state];
+
+  return `
+  <div class="card stack">
+    <div class="row-between">
+      <div><h2>조원 맞히기 게임</h2>
+        <p class="small muted" style="margin-top:4px">시작 버튼을 누르면 <b>모든 조가 동시에</b> 시작합니다. 참가자 화면은 자동으로 바뀝니다(최대 8초).</p></div>
+      <span class="badge ${stateBadge}">${stateLabel}</span>
+    </div>
+
+    <div class="stats">
+      <div class="stat"><b data-clock>--:--</b><span>${w.state==="running"?"남은 시간":"게임 시간"}</span></div>
+      <div class="stat"><b>${finished.length} / ${A.teams.length}</b><span>완료한 조</span></div>
+      <div class="stat"><b>${s.game_duration_min||10}분</b><span>제한 시간</span></div>
+    </div>
+
+    ${!saved?`<div class="note w">먼저 <b>조 편성</b> 탭에서 조를 확정해주세요.</div>`
+      :!s.teams_published?`<div class="note w">조가 아직 <b>비공개</b> 상태입니다. 참가자가 자기 조를 볼 수 있어야 게임이 진행됩니다. 조 편성 탭에서 “지금 공개하기”를 눌러주세요.</div>`:""}
+
+    <div class="row">
+      <label class="f" style="width:130px"><span>제한 시간(분)</span>
+        <input type="number" id="gdur" min="1" max="120" value="${s.game_duration_min||10}"></label>
+      ${w.state==="running"
+        ? `<button class="btn danger" data-act="game-stop" style="align-self:end">지금 종료하기</button>`
+        : `<button class="btn" data-act="game-start" style="align-self:end" ${saved?"":"disabled"}>${w.state==="ended"?"다시 시작하기":"게임 시작"}</button>`}
+      ${w.state!=="waiting"?`<button class="btn ghost" data-act="game-reset" style="align-self:end">대기 상태로 되돌리기</button>`:""}
+    </div>
+    ${w.state==="ended"?`<div class="note g">게임이 종료되어 모든 참가자 화면에 <b>역할 카드와 정답</b>이 공개되었습니다.</div>`:""}
+  </div>
+
+  ${saved?`
+  <div class="card stack">
+    <h2>조별 현황</h2>
+    <div class="scroll"><table>
+      <thead><tr><th class="n">조</th><th>조장</th><th>상태</th><th class="n">기록</th><th class="n">시도</th><th>역할 배정</th></tr></thead>
+      <tbody>${rows.map(({t,best,tries})=>{
+        const ms=membersOf(t.id);
+        const roles=roleMapFor(t,ms);
+        const rank=rankOf(t);
+        return `<tr>
+          <td class="n"><b>${t.no}조</b></td>
+          <td>${esc((findA(t.leader_id)||{}).name||"미지정")}</td>
+          <td>${best?`<span class="badge g">${rank}등 완료</span>`
+                : w.state==="ended"?`<span class="badge b">미완료</span>`
+                : tries?`<span class="badge w">시도 중</span>`:`<span class="badge">-</span>`}</td>
+          <td class="n">${best?fmtDur(best.duration_ms):"-"}</td>
+          <td class="n">${tries}회</td>
+          <td class="tiny">${ms.map(m=>`${roles[m.id]?roles[m.id].emoji:"·"} ${esc(m.name)}`).join(" · ")}</td>
+        </tr>`;}).join("")}</tbody>
+    </table></div>
+    ${w.state==="ended"&&rows.some(r=>!r.best)?`<div class="note w">미완료 조: ${rows.filter(r=>!r.best).map(r=>r.t.no+"조").join(", ")} — 해당 조 화면에는 정답과 “서로 인사하세요” 안내가 떠 있습니다.</div>`:""}
+  </div>
+
+  <div class="card stack">
+    <h3>역할 안내</h3>
+    <p class="small muted">조장은 자동으로 <b>대화 주도자</b>가 되고, 나머지 조원에게는 아래 역할이 자동 배정됩니다. 조마다 배정 결과는 고정이라 새로고침해도 바뀌지 않습니다.</p>
+    <div>${ROLES.map(r=>`<div class="mem"><span style="font-size:19px;width:28px;text-align:center">${r.emoji}</span>
+      <div class="grow"><b>${r.name}</b>${r.key==="host"?' <span class="badge a">조장</span>':""}</div></div>`).join("")}</div>
+    <p class="tiny muted">3명 조는 대화 주도자·타임키퍼·사진 담당, 4명 조는 리액션 담당까지, 5명 조는 기록 담당까지 배정됩니다.</p>
+  </div>`:""}`;
+}
+
 function viewQuestions(){
   const qs=A.settings.questions||DEFAULT_QUESTIONS;
   return `<div class="card stack">
@@ -528,6 +671,16 @@ function viewQuestions(){
       <button class="btn ghost" data-act="qadd">질문 추가</button>
       <button class="btn" data-act="qsave">질문 저장</button>
     </div>
+  </div>
+
+  <div class="card stack">
+    <div><h2>대화 주제</h2>
+      <p class="small muted" style="margin-top:4px">게임이 끝나면 조장(대화 주도자) 화면에 한 장씩 넘겨볼 수 있는 카드로 뜹니다. 한 줄에 하나씩 적어주세요.</p></div>
+    <textarea id="topics" style="min-height:260px;line-height:1.9">${esc((A.settings.topics||DEFAULT_TOPICS).join("\n"))}</textarea>
+    <div class="row">
+      <button class="btn" data-act="tsave">주제 저장</button>
+      <button class="btn ghost" data-act="treset">기본 주제로 되돌리기</button>
+    </div>
   </div>`;
 }
 
@@ -553,25 +706,32 @@ function viewSettings(){
 }
 
 function viewRank(){
+  const since=A.settings.game_started_at?new Date(A.settings.game_started_at).getTime():0;
+  const rs=A.results.filter(r=>!since||!r.finished_at||new Date(r.finished_at).getTime()>=since);
   const best=new Map();
-  for(const r of A.results.filter(r=>r.cleared)){
+  for(const r of rs.filter(r=>r.cleared)){
     const c=best.get(r.leader_id);
-    if(!c||r.attempts<c.attempts||(r.attempts===c.attempts&&(r.duration_ms??1e9)<(c.duration_ms??1e9))) best.set(r.leader_id,r);
+    if(!c||(r.duration_ms??1e9)<(c.duration_ms??1e9)) best.set(r.leader_id,r);
   }
-  const rows=Array.from(best.values()).sort((a,b)=>a.attempts-b.attempts||(a.duration_ms??1e9)-(b.duration_ms??1e9));
+  const rows=Array.from(best.values()).sort((a,b)=>(a.duration_ms??1e9)-(b.duration_ms??1e9));
   const tno=id=>{const t=A.teams.find(t=>t.id===id);return t?t.no+"조":"-";};
-  const tried=new Set(A.results.map(r=>r.leader_id));
+  const doneLeaders=new Set(rows.map(r=>r.leader_id));
+  const undone=A.teams.filter(t=>!doneLeaders.has(t.leader_id));
+  const tried=new Set(rs.map(r=>r.leader_id));
   return `<div class="card stack">
-    <div class="row-between"><h2>조장 순위</h2><span class="badge a">${rows.length}명 전원 정답</span></div>
+    <div class="row-between"><h2>조장 순위</h2><span class="badge a">${rows.length} / ${A.teams.length}조 완료</span></div>
+    <p class="small muted">모든 조가 동시에 시작했고, 전원을 맞힌 순서대로 줄을 세웁니다.</p>
     <div class="scroll"><table>
-      <thead><tr><th class="n">등수</th><th>조장</th><th>조</th><th class="n">시도</th><th class="n">시간</th><th>완료</th></tr></thead>
+      <thead><tr><th class="n">등수</th><th>조장</th><th>조</th><th class="n">기록</th><th class="n">시도</th><th>완료 시각</th></tr></thead>
       <tbody>${rows.map((r,i)=>`<tr>
         <td class="n"><b>${i+1}등</b></td><td>${esc((findA(r.leader_id)||{}).name||"?")}</td>
-        <td>${tno(r.team_id)}</td><td class="n">${r.attempts}회</td><td class="n">${fmtDur(r.duration_ms)}</td>
+        <td>${tno(r.team_id)}</td><td class="n">${fmtDur(r.duration_ms)}</td><td class="n">${r.attempts}회</td>
         <td class="tiny muted">${r.finished_at?esc(fmtLocal(r.finished_at)):"-"}</td></tr>`).join("")
         ||`<tr><td colspan="6" class="muted">아직 전원을 맞힌 조장이 없습니다.</td></tr>`}</tbody>
     </table></div>
-    <p class="small muted">시도한 조장 ${tried.size}명 · 전체 시도 ${A.results.length}회</p>
+    ${undone.length?`<div class="note w"><b>미완료 조</b> — ${undone.map(t=>`${t.no}조(${esc((findA(t.leader_id)||{}).name||"조장 미지정")})`).join(", ")}<br>
+      해당 조 화면에는 정답과 “직접 만나 인사하세요” 안내가 표시됩니다.</div>`:""}
+    <p class="small muted">시도한 조장 ${tried.size}명 · 이번 게임 전체 시도 ${rs.length}회</p>
   </div>`;
 }
 
@@ -647,6 +807,29 @@ document.addEventListener("click",async e=>{
       if(qs.some(q=>!q.label.trim())) return toast("빈 질문이 있습니다.","bad");
       await api.saveSettings({questions:qs}); await loadAll(); toast("질문을 저장했습니다.");
     }
+    else if(act==="game-start"){
+      const dur=Math.max(1,Number(($("#gdur")||{}).value||10));
+      if(!confirm(`제한 시간 ${dur}분으로 지금 게임을 시작할까요? 모든 조가 동시에 시작합니다.`))return;
+      await api.saveSettings({game_started_at:new Date().toISOString(),game_duration_min:dur});
+      await loadAll(); toast("게임을 시작했습니다.");
+    }
+    else if(act==="game-stop"){
+      if(!confirm("지금 게임을 종료할까요? 참가자 화면에 역할과 정답이 공개됩니다."))return;
+      const dur=A.settings.game_duration_min||10;
+      await api.saveSettings({game_started_at:new Date(Date.now()-dur*60000-1000).toISOString()});
+      await loadAll(); toast("게임을 종료했습니다.");
+    }
+    else if(act==="game-reset"){
+      if(!confirm("대기 상태로 되돌릴까요? 기록은 남지만 참가자 화면은 시작 전으로 돌아갑니다."))return;
+      await api.saveSettings({game_started_at:null});
+      await loadAll(); toast("대기 상태로 되돌렸습니다.");
+    }
+    else if(act==="tsave"){
+      const list=$("#topics").value.split("\n").map(x=>x.trim()).filter(Boolean);
+      if(!list.length) return toast("주제를 한 개 이상 적어주세요.","bad");
+      await api.saveSettings({topics:list}); await loadAll(); toast("대화 주제를 저장했습니다.");
+    }
+    else if(act==="treset"){ $("#topics").value=DEFAULT_TOPICS.join("\n"); toast("기본 주제를 불러왔습니다. 저장을 눌러주세요."); }
     else if(act==="reveal-10"||act==="reveal-60"){
       const m=act==="reveal-10"?10:60;
       $("#s-reveal").value=toLocalInput(new Date(Date.now()+m*60000).toISOString());
