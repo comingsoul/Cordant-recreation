@@ -7,20 +7,20 @@
 <meta name="description" content="설문에 답하고, 조를 배정받고, 조장이 조원을 맞혀보세요.">
 <style>
 :root{
-  --bg:#fdf5f8; --card:#ffffff; --ink:#2a1922; --muted:#8b6b78; --line:#f4dde7;
-  --accent:#d93b7d; --accent2:#f472b6; --on-accent:#ffffff;
-  --accent-soft:#fdeaf3; --accent-ink:#ad2660;
+  --bg:#fdf4f8; --card:#ffffff; --ink:#2c1a23; --muted:#8d6c79; --line:#f6dfe9;
+  --accent:#ef92be; --accent2:#f8b7d3; --on-accent:#4a1030;
+  --accent-soft:#fdeaf3; --accent-ink:#b03a72;
   --good:#0f7f66; --good-soft:#dff4ef; --warn:#b0561f; --warn-soft:#fdeee1;
-  --bad:#c92a5e; --bad-soft:#fde8ef; --shadow:0 1px 2px rgba(80,20,50,.05),0 8px 24px rgba(120,30,70,.08);
+  --bad:#c92a5e; --bad-soft:#fde8ef; --on-bad:#ffffff; --shadow:0 1px 2px rgba(80,20,50,.05),0 8px 24px rgba(120,30,70,.08);
   --radius:16px;
 }
 @media (prefers-color-scheme: dark){
   :root{
     --bg:#1a1016; --card:#241821; --ink:#f8ecf2; --muted:#b394a3; --line:#3c2833;
-    --accent:#ff8ec0; --accent2:#ffb3d4; --on-accent:#2b1019;
-    --accent-soft:#3b2130; --accent-ink:#ffb0d3;
+    --accent:#ef92be; --accent2:#ffc0dc; --on-accent:#2b1019;
+    --accent-soft:#3b2130; --accent-ink:#f0a8ca;
     --good:#5fd6ac; --good-soft:#12332c; --warn:#f0a570; --warn-soft:#38271a;
-    --bad:#ff86ab; --bad-soft:#3d1c2a; --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 30px rgba(0,0,0,.3);
+    --bad:#ff86ab; --bad-soft:#3d1c2a; --on-bad:#2b1019; --shadow:0 1px 2px rgba(0,0,0,.35),0 10px 30px rgba(0,0,0,.3);
   }
 }
 *{box-sizing:border-box}
@@ -84,14 +84,16 @@ button{font:inherit;cursor:pointer}
   color:var(--ink);font-weight:600;font-size:14px;flex:1;text-align:center;min-width:64px;
 }
 .chip[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--on-accent)}
-.chip.mini{padding:9px 0;font-size:14px}
+.chip.mini{padding:9px 0;font-size:14px;min-width:0;flex:1 1 0}
+.chips.scale{gap:6px;flex-wrap:nowrap}
+.chips.scale .chip{padding:11px 0}
 
 .badge{display:inline-flex;align-items:center;gap:5px;padding:4px 10px;border-radius:999px;font-size:12px;font-weight:700}
 .badge.a{background:var(--accent-soft);color:var(--accent-ink)}
 .badge.g{background:var(--good-soft);color:var(--good)}
 .badge.w{background:var(--warn-soft);color:var(--warn)}
 .badge.b{background:var(--bad-soft);color:var(--bad)}
-.badge.live{background:var(--bad);color:var(--on-accent)}
+.badge.live{background:var(--bad);color:var(--on-bad)}
 .badge.live::before{content:"";width:6px;height:6px;border-radius:50%;background:currentColor;animation:blink 1.2s infinite}
 @keyframes blink{50%{opacity:.25}}
 
@@ -494,7 +496,7 @@ function viewForm() {
       </div>
 
       <div><span class="lab" style="display:block;font-weight:650;font-size:14px;margin-bottom:7px">모임에서 분위기를 주도하는 편인가요?</span>
-        <div class="chips">
+        <div class="chips scale">
           ${[1,2,3,4,5].map(n => `<button type="button" class="chip mini" data-set="leader_score" data-val="${n}" aria-pressed="${Number(d.leader_score) === n}">${n}</button>`).join("")}
         </div>
         <div class="row-between tiny muted" style="margin-top:6px"><span>전혀 아니다</span><span>매우 그렇다</span></div>
