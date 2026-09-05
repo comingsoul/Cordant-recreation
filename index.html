@@ -378,8 +378,10 @@ const api = {
 const S = {
   screen:"login", settings:null, me:null, team:null, members:[],
   draft:{}, game:null, lastResult:null, board:null, error:"",
-  topicIdx:0, renderKey:"",
+  topicIdx:0, renderKey:"", editing:false,
 };
+/* 조 편성이 시작되기 전까지는 본인이 답변을 고칠 수 있습니다 */
+const canEdit = () => !!(S.settings && S.settings.form_open && !S.settings.teams_published);
 const gameQuestions = () => (S.settings.questions || DEFAULT_QUESTIONS);
 const topicList = () => (S.settings.topics && S.settings.topics.length ? S.settings.topics : DEFAULT_TOPICS);
 const isLeader = () => !!(S.team && S.me && S.team.leader_id === S.me.id);
@@ -468,8 +470,10 @@ function viewForm() {
   return shell(`
     <div class="card stack-lg">
       <div>
-        <div class="row-between"><h2>신청서 작성</h2><span class="badge a">${esc(S.me.name)}님</span></div>
-        <p class="muted small" style="margin-top:6px">답변은 조 편성과 “조원 맞히기” 게임에 사용됩니다. 솔직할수록 재미있어요.</p>
+        <div class="row-between"><h2>${S.editing ? "답변 수정" : "신청서 작성"}</h2><span class="badge a">${esc(S.me.name)}님</span></div>
+        <p class="muted small" style="margin-top:6px">${S.editing
+          ? "고치고 싶은 항목만 바꾼 뒤 저장하시면 됩니다."
+          : "답변은 조 편성과 “조원 맞히기” 게임에 사용됩니다. 솔직할수록 재미있어요."}</p>
       </div>
 
       <label class="field"><span class="lab">출생연도</span>
@@ -510,9 +514,11 @@ function viewForm() {
         </label>`).join("")}
 
       <div class="stack">
-        <button class="btn" data-act="submit">최종 제출하기</button>
-        <button class="btn ghost" data-act="save">임시 저장</button>
-        <p class="tiny muted center">최종 제출하면 답변을 수정할 수 없습니다.</p>
+        <button class="btn" data-act="submit">${S.editing ? "수정 내용 저장하기" : "최종 제출하기"}</button>
+        ${S.editing
+          ? `<button class="btn ghost" data-act="cancel-edit">취소</button>`
+          : `<button class="btn ghost" data-act="save">임시 저장</button>`}
+        <p class="tiny muted center">제출한 뒤에도 <b>조 편성이 시작되기 전까지</b>는 언제든 고칠 수 있어요.</p>
       </div>
     </div>`);
 }
@@ -531,6 +537,9 @@ function viewWaiting() {
           <p class="tiny muted" style="margin-top:10px">${esc(fmtDateTime(rv.at))} 공개</p>
         </div>`
       : `<div class="note a">아직 조 편성이 공개되지 않았습니다. 잠시 후 자동으로 열립니다.</div>`}
+      ${canEdit()
+        ? `<button class="btn soft" data-act="edit">답변 수정하기</button>`
+        : `<div class="note a">조 편성이 시작되어 답변은 더 이상 수정할 수 없습니다.</div>`}
       <button class="btn ghost" data-act="refresh">새로고침</button>
     </div>
     ${myAnswersCard()}`);
@@ -802,12 +811,12 @@ setInterval(async () => {
 
 function toast(msg) { S.error = msg; render(); setTimeout(() => { if (S.error === msg) { S.error = ""; render(); } }, 4000); }
 
-function confirmModal(title, desc, onYes) {
+function confirmModal(title, desc, onYes, yesLabel) {
   const el = document.createElement("div");
   el.className = "modal-bg";
   el.innerHTML = `<div class="modal stack">
       <h2>${esc(title)}</h2><p class="muted small">${esc(desc)}</p>
-      <button class="btn" data-yes>제출하기</button>
+      <button class="btn" data-yes>${esc(yesLabel || "제출하기")}</button>
       <button class="btn ghost" data-no>취소</button></div>`;
   document.body.appendChild(el);
   el.addEventListener("click", e => {
@@ -839,7 +848,15 @@ document.addEventListener("click", async e => {
     else if (act === "save") { collectForm(); await persistDraft(false); toast("임시 저장했습니다."); }
     else if (act === "submit") { collectForm(); doSubmit(); }
     else if (act === "refresh") await refresh();
-    else if (act === "logout") { Object.assign(S, { me:null, team:null, members:[], draft:{}, game:null, lastResult:null, screen:"login" }); render(); }
+    else if (act === "edit") {
+      if (!canEdit()) return toast("조 편성이 시작되어 수정할 수 없습니다.");
+      S.editing = true;
+      S.draft = { birth_year:S.me.birth_year, gender:S.me.gender, mbti:S.me.mbti,
+                  leader_score:S.me.leader_score ?? 3, answers:{ ...(S.me.answers || {}) } };
+      S.screen = "form"; render();
+    }
+    else if (act === "cancel-edit") { S.editing = false; await refresh(); }
+    else if (act === "logout") { Object.assign(S, { me:null, team:null, members:[], draft:{}, game:null, lastResult:null, screen:"login", editing:false }); render(); }
     else if (act === "game") startGame();
     else if (act === "grade") await grade();
     else if (act === "board") { S.board = await api.leaderboard(S.settings.game_started_at); S.screen = "board"; render(); }
@@ -882,7 +899,7 @@ async function refresh() {
   S.settings = await api.getSettings();
   if (!S.me) { S.screen = "login"; return render(); }
   S.me = (await api.findApplicant(S.me.name, S.me.phone4)) || S.me;
-  if (!S.me.submitted) { S.screen = "form"; return render(); }
+  if (!S.me.submitted || S.editing) { S.screen = "form"; return render(); }
   const t = await api.getMyTeam(S.me.id);
   const rv = revealState();
   if (t && rv.open) {
@@ -903,7 +920,8 @@ async function persistDraft(submit) {
     leader_score: S.draft.leader_score ?? 3,
     answers: S.draft.answers || {},
   };
-  if (submit) { patch.submitted = true; patch.submitted_at = new Date().toISOString(); }
+  // 수정일 때는 최초 제출 시각을 그대로 둡니다 (조장 선정의 동점 기준이라서)
+  if (submit) { patch.submitted = true; if (!S.me.submitted_at) patch.submitted_at = new Date().toISOString(); }
   S.me = await api.updateApplicant(S.me.id, patch);
 }
 
@@ -914,9 +932,16 @@ function doSubmit() {
   if (!d.mbti || d.mbti.includes("_")) return toast("MBTI 4가지를 모두 선택해주세요.");
   const miss = gameQuestions().find(q => !String((d.answers || {})[q.id] || "").trim());
   if (miss) return toast(`“${miss.label}” 답변을 적어주세요.`);
-  confirmModal("최종 제출할까요?", "제출 후에는 답변을 수정할 수 없습니다.", async () => {
-    try { await persistDraft(true); await refresh(); } catch (err) { toast(err.message); }
-  });
+  const editing = S.editing;
+  confirmModal(
+    editing ? "수정 내용을 저장할까요?" : "최종 제출할까요?",
+    editing ? "조 편성이 시작되면 더 이상 고칠 수 없습니다."
+            : "제출 후에도 조 편성이 시작되기 전까지는 수정할 수 있어요.",
+    async () => {
+      try { await persistDraft(true); S.editing = false; await refresh(); }
+      catch (err) { toast(err.message); }
+    },
+    editing ? "저장하기" : "제출하기");
 }
 
 function shuffle(arr) {

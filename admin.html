@@ -105,7 +105,7 @@ details.ans .q{font-size:11.5px;color:var(--muted)}
 const CONFIG = {
   SUPABASE_URL: "https://lewiipqawxuzkpdlnlvv.supabase.co",
   SUPABASE_ANON_KEY: "sb_publishable_FP6oITe8CQ03he_kSTz0Fw_ICUtGnZ9",
-  ADMIN_PIN: "708245",    // 관리자 페이지 접속 PIN — 원하는 숫자로 바꾸세요
+  ADMIN_PIN: "991111",    // 관리자 페이지 접속 PIN
 };
 
 const DEMO = !CONFIG.SUPABASE_URL || !CONFIG.SUPABASE_ANON_KEY;
@@ -210,7 +210,7 @@ const DEMO_DB = (()=>{
   return {
     settings:{id:1,event_title:"조 편성 & 조원 맞히기",form_open:true,reveal_at:null,
       teams_published:false,team_size:4,questions:DEFAULT_QUESTIONS,topics:DEFAULT_TOPICS,
-      game_started_at:null,game_duration_min:10},
+      game_started_at:null,game_duration_min:10,past_pairs:[],round_log:[]},
     applicants:people, teams:[], team_members:[], guess_results:[],
   };
 })();
@@ -226,6 +226,8 @@ const api = {
     if(!Array.isArray(s.questions)||!s.questions.length) s.questions=DEFAULT_QUESTIONS;
     if(!Array.isArray(s.topics)||!s.topics.length) s.topics=DEFAULT_TOPICS;
     if(!s.game_duration_min) s.game_duration_min=10;
+    if(!Array.isArray(s.past_pairs)) s.past_pairs=[];
+    if(!Array.isArray(s.round_log)) s.round_log=[];
     return s;
   },
   async saveSettings(patch){
@@ -308,12 +310,30 @@ const rnd = n=>Math.floor(Math.random()*n);
 
 const W_SAME_AGE = 60;   // 동갑 페널티
 const W_NO_E     = 500;  // E 없는 조 페널티
+const W_MET      = 300;  // 지난 라운드에 같은 조였던 사람과 또 묶이는 페널티
+
+let MET = new Set();     // "idA|idB" 형태로 기억된 지난 라운드 조합
+const pairKey = (a,b)=> a<b ? a+"|"+b : b+"|"+a;
+function metPairs(t){
+  let n=0;
+  for(let i=0;i<t.members.length;i++)
+    for(let j=i+1;j<t.members.length;j++)
+      if(MET.has(pairKey(t.members[i].id,t.members[j].id))) n++;
+  return n;
+}
+function pairsOfTeams(teams){
+  const out=[];
+  for(const ids of teams)
+    for(let i=0;i<ids.length;i++)
+      for(let j=i+1;j<ids.length;j++) out.push(pairKey(ids[i],ids[j]));
+  return out;
+}
 
 function teamCost(t){
-  const y=yearsOf(t); if(!y.length) return 0;
-  const spread=Math.max(...y)-Math.min(...y);
-  const dup=y.length-new Set(y).size;
-  return spread + dup*W_SAME_AGE + (t.members.some(isE)?0:W_NO_E);
+  let c = metPairs(t)*W_MET + (t.members.some(isE)?0:W_NO_E);
+  const y=yearsOf(t);
+  if(y.length) c += (Math.max(...y)-Math.min(...y)) + (y.length-new Set(y).size)*W_SAME_AGE;
+  return c;
 }
 const totalCost = ts=>ts.reduce((s,t)=>s+teamCost(t),0);
 
@@ -323,7 +343,51 @@ function addCost(t,p){
   let c=Math.abs((p.birth_year||avg)-avg);
   if(p.birth_year&&y.includes(p.birth_year)) c+=W_SAME_AGE;
   if(!t.members.some(isE)&&!isE(p)) c+=5;
+  c += t.members.filter(m=>MET.has(pairKey(m.id,p.id))).length*W_MET;
   return c;
+}
+
+const byYoung=(a,b)=>(b.birth_year||0)-(a.birth_year||0);
+const shuffleArr=a=>{const x=a.slice();for(let i=x.length-1;i>0;i--){const j=rnd(i+1);[x[i],x[j]]=[x[j],x[i]];}return x;};
+
+/* 1차 배치: E를 각 조에 하나씩 심고 나머지를 비용이 가장 낮은 조에 넣습니다.
+   random=true면 시작점을 흔들어 다른 해를 찾게 합니다. */
+function construct(people,sizes,random){
+  const teams=sizes.map((cap,i)=>({no:i+1,cap,members:[]}));
+  const k=teams.length;
+  let Es=people.filter(isE), rest=people.filter(p=>!isE(p));
+  if(random){Es=shuffleArr(Es);rest=shuffleArr(rest);}
+  else {Es=Es.slice().sort(byYoung);rest=rest.slice().sort(byYoung);}
+  Es.slice(0,k).forEach((p,i)=>teams[i].members.push(p));
+  let pool=[...Es.slice(k),...rest];
+  if(!random) pool=pool.sort(byYoung);
+  for(const p of pool){
+    let best=null,bc=Infinity;
+    for(const t of teams){
+      if(t.members.length>=t.cap) continue;
+      const c=addCost(t,p)+(random?Math.random()*4:0);
+      if(c<bc){bc=c;best=t;}
+    }
+    (best||teams.find(t=>t.members.length<t.cap)||teams[0]).members.push(p);
+  }
+  return teams;
+}
+
+/* 지역 탐색: 두 사람을 바꿔보고 전체 비용이 줄면 유지.
+   같은 비용이면 절반의 확률로 받아들여 평지에 갇히지 않게 합니다. */
+function polish(teams,iters){
+  let cur=totalCost(teams);
+  for(let it=0;it<iters;it++){
+    const i=rnd(teams.length),j=rnd(teams.length);
+    if(i===j||!teams[i].members.length||!teams[j].members.length) continue;
+    const a=rnd(teams[i].members.length),b=rnd(teams[j].members.length);
+    const pa=teams[i].members[a],pb=teams[j].members[b];
+    teams[i].members[a]=pb;teams[j].members[b]=pa;
+    const next=totalCost(teams);
+    if(next<cur || (next===cur && Math.random()<0.5)) cur=next;
+    else {teams[i].members[a]=pa;teams[j].members[b]=pb;}
+  }
+  return totalCost(teams);
 }
 
 function buildTeams(people,size){
@@ -337,34 +401,16 @@ function buildTeams(people,size){
   const sizes=new Array(k).fill(Math.floor(n/k));
   for(let i=0;i<n%k;i++) sizes[i]++;
 
-  const byYoung=(a,b)=>(b.birth_year||0)-(a.birth_year||0);
-  const Es=people.filter(isE).sort(byYoung);
-  const rest=people.filter(p=>!isE(p)).sort(byYoung);
-  if(Es.length<k) warnings.push(`E 성향이 ${Es.length}명뿐입니다. 조 ${k}개 전부에 E를 넣을 수 없어 일부 조는 리더 성향 점수가 가장 높은 사람이 조장이 됩니다.`);
+  const Ecount=people.filter(isE).length;
+  if(Ecount<k) warnings.push(`E 성향이 ${Ecount}명뿐입니다. 조 ${k}개 전부에 E를 넣을 수 없어 일부 조는 리더 성향 점수가 가장 높은 사람이 조장이 됩니다.`);
 
-  const teams=sizes.map((cap,i)=>({no:i+1,cap,members:[]}));
-  Es.slice(0,k).forEach((p,i)=>teams[i].members.push(p));
-  const pool=[...Es.slice(k),...rest].sort(byYoung);
-  for(const p of pool){
-    let best=null,bc=Infinity;
-    for(const t of teams){
-      if(t.members.length>=t.cap) continue;
-      const c=addCost(t,p);
-      if(c<bc){bc=c;best=t;}
-    }
-    (best||teams[0]).members.push(p);
-  }
-
-  // 지역 탐색: 두 사람을 바꿔보고 전체 비용이 줄면 유지
-  let cur=totalCost(teams);
-  for(let it=0;it<6000;it++){
-    const i=rnd(teams.length),j=rnd(teams.length);
-    if(i===j||!teams[i].members.length||!teams[j].members.length) continue;
-    const a=rnd(teams[i].members.length),b=rnd(teams[j].members.length);
-    const pa=teams[i].members[a],pb=teams[j].members[b];
-    teams[i].members[a]=pb;teams[j].members[b]=pa;
-    const next=totalCost(teams);
-    if(next<cur) cur=next; else {teams[i].members[a]=pa;teams[j].members[b]=pb;}
+  // 여러 번 다시 풀어보고 가장 점수가 낮은 조합을 채택합니다
+  let teams=null,bestCost=Infinity;
+  for(let r=0;r<24;r++){
+    const cand=construct(people,sizes,r>0);
+    const c=polish(cand, r===0?14000:7000);
+    if(c<bestCost){bestCost=c;teams=cand;}
+    if(bestCost===0) break;
   }
 
   teams.sort((x,y)=>avgYear(y)-avgYear(x));
@@ -378,6 +424,8 @@ function buildTeams(people,size){
     const y=yearsOf(t);
     const dups=[...new Set(y.filter((v,i)=>y.indexOf(v)!==i))];
     if(dups.length) warnings.push(`${t.no}조에 ${dups.join(", ")}년생이 겹칩니다. 인원 구성상 불가피한 경우입니다.`);
+    const rep=metPairs(t);
+    if(rep) warnings.push(`${t.no}조에 지난 라운드에 같은 조였던 조합이 ${rep}쌍 남아 있습니다. 인원이 적어 완전히 피할 수 없는 경우입니다.`);
   });
   return {teams,warnings};
 }
@@ -390,6 +438,9 @@ const A = {ok:false,tab:"dash",settings:null,applicants:[],teams:[],links:[],res
 const submitted = ()=>A.applicants.filter(a=>a.submitted);
 const findA = id=>A.applicants.find(a=>a.id===id);
 const membersOf = tid=>A.links.filter(l=>l.team_id===tid).map(l=>findA(l.applicant_id)).filter(Boolean);
+const roundLog = ()=> (A.settings && A.settings.round_log) || [];
+/* 그 사람이 실제로 조에 들어가 게임을 한 라운드 수 */
+const playedCount = id => roundLog().filter(r=>(r.teams||[]).some(t=>(t.member_ids||[]).includes(id))).length;
 
 function toast(msg,kind="ok"){
   const el=document.createElement("div");
@@ -456,6 +507,7 @@ function viewDash(){
       <div class="stat"><b>${e} : ${sub.length-e}</b><span>E : I 비율</span></div>
       <div class="stat"><b>${A.teams.length||k}</b><span>${A.teams.length?"편성된 조":"예상 조 수"}</span></div>
       <div class="stat"><b>${A.settings.teams_published?"공개":"비공개"}</b><span>조 공개 상태</span></div>
+      <div class="stat"><b>${roundLog().length}</b><span>진행한 게임 라운드</span></div>
     </div>
     <div class="card stack" style="margin-top:14px">
       <h2>한눈에 보기</h2>
@@ -482,7 +534,7 @@ function viewPeople(){
       </div>
     </div>
     <div class="scroll"><table>
-      <thead><tr><th>이름</th><th class="n">출생</th><th>성별</th><th>MBTI</th><th class="n">리더</th><th>상태</th><th>답변</th><th></th></tr></thead>
+      <thead><tr><th>이름</th><th class="n">출생</th><th>성별</th><th>MBTI</th><th class="n">리더</th><th>상태</th><th class="n">게임 참여</th><th>답변</th><th></th></tr></thead>
       <tbody>
       ${rows.map(a=>`<tr>
         <td><b>${esc(a.name)}</b><div class="tiny muted">${esc(a.phone4)}</div></td>
@@ -491,13 +543,14 @@ function viewPeople(){
         <td>${a.mbti?`<span class="badge ${isE(a)?"a":""}">${esc(a.mbti)}</span>`:"-"}</td>
         <td class="n">${a.leader_score??"-"}</td>
         <td>${a.submitted?`<span class="badge g">제출</span>`:`<span class="badge w">작성 중</span>`}</td>
+        <td class="n">${playedCount(a.id)?`<span class="badge a">${playedCount(a.id)}회</span>`:`<span class="tiny muted">-</span>`}</td>
         <td style="min-width:180px">${a.submitted?`<details class="ans"><summary>보기</summary>
             ${qs.map(qq=>`<div class="qa"><div class="q">${esc(qq.label)}</div><div>${esc((a.answers||{})[qq.id]||"-")}</div></div>`).join("")}
           </details>`:"-"}</td>
         <td><div class="row" style="gap:6px;flex-wrap:nowrap">
           ${a.submitted?`<button class="btn ghost sm" data-unlock="${a.id}">제출 해제</button>`:""}
           <button class="btn danger sm" data-del="${a.id}">삭제</button></div></td>
-      </tr>`).join("")||`<tr><td colspan="8" class="muted">신청자가 없습니다.</td></tr>`}
+      </tr>`).join("")||`<tr><td colspan="9" class="muted">신청자가 없습니다.</td></tr>`}
       </tbody></table></div>
   </div>`;
 }
@@ -515,8 +568,12 @@ function viewTeams(){
         <label class="f" style="width:110px"><span>조당 인원</span>
           <input type="number" id="tsize" min="2" max="8" value="${A.settings.team_size||4}"></label>
         <button class="btn" data-act="build" style="align-self:end">자동 편성 실행</button>
+        ${saved?`<button class="btn soft" data-act="build-round2" style="align-self:end">2라운드 편성 (지금 조원 빼고 새로 묶기)</button>`:""}
       </div>
     </div>
+    ${(A.settings.past_pairs||[]).length?`<div class="note a">
+      지난 라운드 조합 <b>${(A.settings.past_pairs||[]).length}쌍</b>을 기억하고 있습니다. 편성할 때 이 사람들은 최대한 다른 조로 갈라놓습니다.
+      <button class="btn ghost sm" data-act="met-reset" style="margin-left:8px">기억 지우기</button></div>`:""}
     ${plan?`
       ${A.planWarn.length?`<div class="note w">${A.planWarn.map(w=>esc(w)).join("<br>")}</div>`:`<div class="note g">모든 조에 E 조장이 배정되었고 동갑이 겹치지 않습니다.</div>`}
       <div class="teams">${plan.map(t=>`
@@ -607,11 +664,29 @@ function viewLive(){
         <input type="number" id="gdur" min="1" max="120" value="${s.game_duration_min||10}"></label>
       ${w.state==="running"
         ? `<button class="btn danger" data-act="game-stop" style="align-self:end">지금 종료하기</button>`
-        : `<button class="btn" data-act="game-start" style="align-self:end" ${saved?"":"disabled"}>${w.state==="ended"?"다시 시작하기":"게임 시작"}</button>`}
+        : `<button class="btn" data-act="game-start" style="align-self:end" ${saved?"":"disabled"}>${w.state==="ended"?"새 라운드로 시작":"게임 시작"}</button>
+           ${w.state==="ended"?`<button class="btn soft" data-act="game-restart" style="align-self:end">기록 없이 다시 시작</button>`:""}`}
       ${w.state!=="waiting"?`<button class="btn ghost" data-act="game-reset" style="align-self:end">대기 상태로 되돌리기</button>`:""}
     </div>
     ${w.state==="ended"?`<div class="note g">게임이 종료되어 모든 참가자 화면에 <b>역할 카드와 정답</b>이 공개되었습니다.</div>`:""}
   </div>
+
+  ${roundLog().length?`
+  <div class="card stack">
+    <div class="row-between"><h2>라운드 기록</h2>
+      <button class="btn ghost sm" data-act="rounds-reset">기록 초기화</button></div>
+    <p class="small muted">게임을 시작할 때마다 그 시점의 조 구성이 기록됩니다. 사람별 참여 횟수는 <b>신청자</b> 탭에서 볼 수 있어요.</p>
+    <div class="scroll"><table>
+      <thead><tr><th class="n">라운드</th><th>시작 시각</th><th class="n">조 수</th><th class="n">참여 인원</th><th>조장</th></tr></thead>
+      <tbody>${roundLog().map(r=>`<tr>
+        <td class="n"><b>${r.no}R</b></td>
+        <td class="tiny muted">${r.started_at?esc(fmtLocal(r.started_at)):"-"}</td>
+        <td class="n">${(r.teams||[]).length}개</td>
+        <td class="n">${(r.teams||[]).reduce((n,t)=>n+((t.member_ids||[]).length),0)}명</td>
+        <td class="tiny">${(r.teams||[]).map(t=>esc((findA(t.leader_id)||{}).name||"-")).join(", ")}</td>
+      </tr>`).join("")}</tbody>
+    </table></div>
+  </div>`:""}
 
   ${saved?`
   <div class="card stack">
@@ -780,9 +855,27 @@ document.addEventListener("click",async e=>{
     if(act==="reload"){await loadAll();toast("최신 데이터를 불러왔습니다.");}
     else if(act==="csv") downloadCsv();
     else if(act==="build"){
+      MET=new Set(A.settings.past_pairs||[]);
       const size=Number(($("#tsize")||{}).value||A.settings.team_size||4);
       const r=buildTeams(submitted().map(x=>({...x})),size);
       A.plan=r.teams; A.planWarn=r.warnings; A.settings.team_size=size; render();
+    }
+    else if(act==="build-round2"){
+      if(!A.teams.length) return toast("먼저 1라운드 조를 확정해주세요.","bad");
+      if(!confirm("지금 조 구성을 '이미 만난 사이'로 기억하고, 겹치지 않게 새로 편성할까요?"))return;
+      const groups=A.teams.map(t=>membersOf(t.id).map(m=>m.id));
+      const merged=Array.from(new Set([...(A.settings.past_pairs||[]),...pairsOfTeams(groups)]));
+      await api.saveSettings({past_pairs:merged});
+      A.settings.past_pairs=merged;
+      MET=new Set(merged);
+      const size=Number(($("#tsize")||{}).value||A.settings.team_size||4);
+      const r=buildTeams(submitted().map(x=>({...x})),size);
+      A.plan=r.teams; A.planWarn=r.warnings; A.settings.team_size=size; render();
+      toast(`지난 조합 ${merged.length}쌍을 기억했습니다.`);
+    }
+    else if(act==="met-reset"){
+      if(!confirm("기억한 지난 라운드 조합을 모두 지울까요? 다음 편성부터는 제한 없이 섞입니다."))return;
+      await api.saveSettings({past_pairs:[]}); await loadAll(); toast("기억을 지웠습니다.");
     }
     else if(act==="drop-plan"){A.plan=null;A.planWarn=[];render();}
     else if(act==="save-plan"){
@@ -809,9 +902,24 @@ document.addEventListener("click",async e=>{
     }
     else if(act==="game-start"){
       const dur=Math.max(1,Number(($("#gdur")||{}).value||10));
-      if(!confirm(`제한 시간 ${dur}분으로 지금 게임을 시작할까요? 모든 조가 동시에 시작합니다.`))return;
+      const log=roundLog().slice();
+      const no=log.length+1;
+      if(!confirm(`제한 시간 ${dur}분으로 ${no}라운드를 시작할까요? 모든 조가 동시에 시작합니다.`))return;
+      const now=new Date().toISOString();
+      log.push({no:no, started_at:now,
+        teams:A.teams.map(t=>({no:t.no,leader_id:t.leader_id,member_ids:membersOf(t.id).map(m=>m.id)}))});
+      await api.saveSettings({game_started_at:now,game_duration_min:dur,round_log:log});
+      await loadAll(); toast(`${no}라운드를 시작했습니다.`);
+    }
+    else if(act==="game-restart"){
+      const dur=Math.max(1,Number(($("#gdur")||{}).value||10));
+      if(!confirm("라운드 기록을 추가하지 않고 다시 시작할까요? 참여 횟수는 늘어나지 않습니다."))return;
       await api.saveSettings({game_started_at:new Date().toISOString(),game_duration_min:dur});
-      await loadAll(); toast("게임을 시작했습니다.");
+      await loadAll(); toast("기록 없이 다시 시작했습니다.");
+    }
+    else if(act==="rounds-reset"){
+      if(!confirm("라운드 기록을 모두 지울까요? 게임 참여 횟수가 0으로 초기화됩니다."))return;
+      await api.saveSettings({round_log:[]}); await loadAll(); toast("라운드 기록을 지웠습니다.");
     }
     else if(act==="game-stop"){
       if(!confirm("지금 게임을 종료할까요? 참가자 화면에 역할과 정답이 공개됩니다."))return;
@@ -876,11 +984,11 @@ function collectQuestions(){
 
 function downloadCsv(){
   const qs=A.settings.questions||DEFAULT_QUESTIONS;
-  const head=["이름","전화뒷자리","출생연도","성별","MBTI","리더성향","제출","제출시각","조",...qs.map(q=>q.label)];
+  const head=["이름","전화뒷자리","출생연도","성별","MBTI","리더성향","제출","제출시각","조","게임참여횟수",...qs.map(q=>q.label)];
   const teamOf=id=>{const l=A.links.find(l=>l.applicant_id===id);if(!l)return "";
     const t=A.teams.find(t=>t.id===l.team_id);return t?(t.leader_id===id?t.no+"조(조장)":t.no+"조"):"";};
   const rows=A.applicants.map(a=>[a.name,a.phone4,a.birth_year||"",GENDER[a.gender]||"",a.mbti||"",a.leader_score??"",
-    a.submitted?"O":"X",a.submitted_at?fmtLocal(a.submitted_at):"",teamOf(a.id),
+    a.submitted?"O":"X",a.submitted_at?fmtLocal(a.submitted_at):"",teamOf(a.id),playedCount(a.id),
     ...qs.map(q=>(a.answers||{})[q.id]||"")]);
   const csv=[head,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\r\n");
   const blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"});
