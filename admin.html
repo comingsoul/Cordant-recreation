@@ -51,6 +51,7 @@ button{font:inherit;cursor:pointer}
 .btn.ghost{background:transparent;color:var(--ink);border-color:var(--line)}
 .btn.soft{background:var(--accent-soft);color:var(--accent-ink)}
 .btn.danger{background:var(--bad-soft);color:var(--bad)}
+.btn.ok{background:var(--good-soft);color:var(--good);border-color:transparent}
 .btn.sm{padding:7px 11px;font-size:12.5px;border-radius:9px}
 .btn.block{width:100%}
 input[type=text],input[type=number],input[type=password],input[type=datetime-local],select,textarea{
@@ -205,7 +206,8 @@ const DEMO_DB = (()=>{
     A("임태호",1990,"M","ESFP",4,["싸이 - 챔피언","치킨","바로 퇴사 통보","분위기 메이커","노래방에서 마이크 부순 날"],10),
     A("오준혁",1989,"M","ENFJ",4,["폴킴 - 모든 날, 모든 순간","된장찌개","부모님 여행 보내드리기","맏형 스타일","팀원이 내 자리에 곰인형 앉혀둔 날"],11),
   ];
-  people.push({id:"a-미제출",name:"신입생",phone4:"9999",birth_year:null,gender:null,mbti:null,
+  people.forEach(p=>{p.prize_given=false;});
+  people.push({id:"a-미제출",name:"신입생",phone4:"9999",birth_year:null,gender:null,mbti:null,prize_given:false,
     leader_score:3,answers:{},submitted:false,submitted_at:null});
   return {
     settings:{id:1,event_title:"조 편성 & 조원 맞히기",form_open:true,reveal_at:null,
@@ -263,7 +265,8 @@ const api = {
       DEMO_DB.team_members = plan.flatMap((t,i)=>t.members.map(m=>({team_id:"t"+(i+1),applicant_id:m.id})));
       DEMO_DB.guess_results=[]; return;
     }
-    await sb("teams?no=gte.0",{method:"DELETE"});
+    await sb("team_members?team_id=not.is.null",{method:"DELETE"});
+    await sb("teams?id=not.is.null",{method:"DELETE"});
     const created = await sb("teams",{method:"POST",prefer:"return=representation",
       body:plan.map(t=>({no:t.no,leader_id:t.leader?t.leader.id:null}))});
     const rows=[];
@@ -272,6 +275,11 @@ const api = {
       p.members.forEach(m=>rows.push({team_id:row.id,applicant_id:m.id}));
     });
     if(rows.length) await sb("team_members",{method:"POST",body:rows});
+  },
+  async clearTeams(){
+    if(DEMO){DEMO_DB.teams=[];DEMO_DB.team_members=[];DEMO_DB.guess_results=[];return;}
+    await sb("team_members?team_id=not.is.null",{method:"DELETE"});
+    await sb("teams?id=not.is.null",{method:"DELETE"});
   },
   async setLeader(teamId,applicantId){
     if(DEMO){const t=DEMO_DB.teams.find(t=>t.id===teamId);t.leader_id=applicantId;return;}
@@ -527,14 +535,14 @@ function viewPeople(){
   const qs=A.settings.questions||DEFAULT_QUESTIONS;
   return `<div class="card stack">
     <div class="row-between">
-      <h2>신청자 ${rows.length}명</h2>
+      <h2>신청자 ${rows.length}명 <span class="badge g" style="vertical-align:middle">응모권 ${A.applicants.filter(x=>x.prize_given).length}명 지급</span></h2>
       <div class="row">
         <input type="text" id="q" placeholder="이름 / MBTI 검색" value="${esc(A.q)}" style="width:180px">
         <button class="btn soft sm" data-act="csv">CSV 내려받기</button>
       </div>
     </div>
     <div class="scroll"><table>
-      <thead><tr><th>이름</th><th class="n">출생</th><th>성별</th><th>MBTI</th><th class="n">리더</th><th>상태</th><th class="n">게임 참여</th><th>답변</th><th></th></tr></thead>
+      <thead><tr><th>이름</th><th class="n">출생</th><th>성별</th><th>MBTI</th><th class="n">리더</th><th>상태</th><th class="n">게임 참여</th><th>응모권</th><th>답변</th><th></th></tr></thead>
       <tbody>
       ${rows.map(a=>`<tr>
         <td><b>${esc(a.name)}</b><div class="tiny muted">${esc(a.phone4)}</div></td>
@@ -544,13 +552,15 @@ function viewPeople(){
         <td class="n">${a.leader_score??"-"}</td>
         <td>${a.submitted?`<span class="badge g">제출</span>`:`<span class="badge w">작성 중</span>`}</td>
         <td class="n">${playedCount(a.id)?`<span class="badge a">${playedCount(a.id)}회</span>`:`<span class="tiny muted">-</span>`}</td>
+        <td><button class="btn sm ${a.prize_given?"ok":"ghost"}" data-prize="${a.id}" style="min-width:46px"
+              title="${a.prize_given?"응모권 지급함 — 누르면 취소":"아직 안 줌 — 누르면 지급 표시"}">${a.prize_given?"O":"X"}</button></td>
         <td style="min-width:180px">${a.submitted?`<details class="ans"><summary>보기</summary>
             ${qs.map(qq=>`<div class="qa"><div class="q">${esc(qq.label)}</div><div>${esc((a.answers||{})[qq.id]||"-")}</div></div>`).join("")}
           </details>`:"-"}</td>
         <td><div class="row" style="gap:6px;flex-wrap:nowrap">
           ${a.submitted?`<button class="btn ghost sm" data-unlock="${a.id}">제출 해제</button>`:""}
           <button class="btn danger sm" data-del="${a.id}">삭제</button></div></td>
-      </tr>`).join("")||`<tr><td colspan="9" class="muted">신청자가 없습니다.</td></tr>`}
+      </tr>`).join("")||`<tr><td colspan="10" class="muted">신청자가 없습니다.</td></tr>`}
       </tbody></table></div>
   </div>`;
 }
@@ -602,9 +612,11 @@ function viewTeams(){
         <span class="badge ${A.settings.teams_published?"g":"w"}">${A.settings.teams_published?"신청자에게 공개 중":"비공개"}</span>
         <button class="btn ${A.settings.teams_published?"ghost":""} sm" data-act="toggle-publish">
           ${A.settings.teams_published?"공개 중단":"지금 공개하기"}</button>
+        <button class="btn danger sm" data-act="teams-clear">조 편성 초기화</button>
       </div>
     </div>
     <p class="small muted">조원을 다른 조로 옮기거나 조장을 바꿀 수 있습니다. 변경은 즉시 저장됩니다.</p>
+    ${!A.settings.teams_published?`<div class="note w">지금은 <b>비공개</b>라 참가자 화면에 조가 보이지 않습니다. 준비가 되면 <b>지금 공개하기</b>를 눌러주세요.</div>`:""}
     <div class="teams">${A.teams.map(t=>{
       const ms=membersOf(t.id);
       return `<div class="team">
@@ -835,6 +847,16 @@ document.addEventListener("click",async e=>{
   const del=e.target.closest("[data-del]");
   if(del){if(!confirm("이 신청자를 삭제할까요? 되돌릴 수 없습니다."))return;
     try{await api.removeApplicant(del.dataset.del);await loadAll();toast("삭제했습니다.");}catch(err){toast(err.message,"bad");}return;}
+  const pz=e.target.closest("[data-prize]");
+  if(pz){
+    const a=findA(pz.dataset.prize); if(!a) return;
+    const next=!a.prize_given;
+    try{ await api.patchApplicant(a.id,{prize_given:next});
+         a.prize_given=next; render();
+         toast(next?`${a.name}님 응모권 지급 표시`:`${a.name}님 지급 표시 해제`);
+    }catch(err){toast(err.message,"bad");}
+    return;
+  }
   const unl=e.target.closest("[data-unlock]");
   if(unl){try{await api.patchApplicant(unl.dataset.unlock,{submitted:false});await loadAll();toast("제출을 해제했습니다. 본인이 다시 수정할 수 있습니다.");}catch(err){toast(err.message,"bad");}return;}
   const qmv=e.target.closest("[data-qmove]");
@@ -882,8 +904,16 @@ document.addEventListener("click",async e=>{
       if(!A.plan) return;
       if(!confirm("이 편성으로 확정할까요? 기존 조 편성과 게임 기록은 대체됩니다."))return;
       await api.replaceTeams(A.plan);
-      await api.saveSettings({team_size:A.settings.team_size});
-      A.plan=null;A.planWarn=[]; await loadAll(); toast("조 편성을 확정했습니다.");
+      // 새 조는 비공개 상태로 저장됩니다. 준비가 되면 "지금 공개하기"를 눌러주세요.
+      await api.saveSettings({team_size:A.settings.team_size,teams_published:false,game_started_at:null});
+      A.plan=null;A.planWarn=[]; await loadAll();
+      toast("조 편성을 확정했습니다. 아직 비공개 상태예요.");
+    }
+    else if(act==="teams-clear"){
+      if(!confirm("확정된 조를 전부 지울까요? 참가자 화면에서 조가 사라지고, 게임 기록도 초기화됩니다."))return;
+      await api.clearTeams();
+      await api.saveSettings({teams_published:false,game_started_at:null});
+      A.plan=null;A.planWarn=[]; await loadAll(); toast("조 편성을 초기화했습니다.");
     }
     else if(act==="toggle-publish"){
       const next=!A.settings.teams_published;
@@ -984,11 +1014,11 @@ function collectQuestions(){
 
 function downloadCsv(){
   const qs=A.settings.questions||DEFAULT_QUESTIONS;
-  const head=["이름","전화뒷자리","출생연도","성별","MBTI","리더성향","제출","제출시각","조","게임참여횟수",...qs.map(q=>q.label)];
+  const head=["이름","전화뒷자리","출생연도","성별","MBTI","리더성향","제출","제출시각","조","게임참여횟수","응모권지급",...qs.map(q=>q.label)];
   const teamOf=id=>{const l=A.links.find(l=>l.applicant_id===id);if(!l)return "";
     const t=A.teams.find(t=>t.id===l.team_id);return t?(t.leader_id===id?t.no+"조(조장)":t.no+"조"):"";};
   const rows=A.applicants.map(a=>[a.name,a.phone4,a.birth_year||"",GENDER[a.gender]||"",a.mbti||"",a.leader_score??"",
-    a.submitted?"O":"X",a.submitted_at?fmtLocal(a.submitted_at):"",teamOf(a.id),playedCount(a.id),
+    a.submitted?"O":"X",a.submitted_at?fmtLocal(a.submitted_at):"",teamOf(a.id),playedCount(a.id),a.prize_given?"O":"X",
     ...qs.map(q=>(a.answers||{})[q.id]||"")]);
   const csv=[head,...rows].map(r=>r.map(v=>`"${String(v).replace(/"/g,'""')}"`).join(",")).join("\r\n");
   const blob=new Blob(["﻿"+csv],{type:"text/csv;charset=utf-8"});

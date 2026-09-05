@@ -340,6 +340,10 @@ const api = {
     const ms = await sb("team_members?select=applicants(id,name,birth_year,mbti,leader_score,answers)&team_id=eq." + tid);
     return { team: ts[0], members: ms.map(m => m.applicants).filter(Boolean) };
   },
+  async allNames() {
+    if (DEMO) return DEMO_DB.applicants.filter(a => a.submitted).map(a => ({ id:a.id, name:a.name }));
+    return await sb("applicants?select=id,name&submitted=is.true&order=name.asc");
+  },
   async saveResult(row) {
     if (DEMO) { DEMO_DB.guess_results.push({ id:"g" + Date.now(), ...row }); return; }
     await sb("guess_results", { method:"POST", body:row });
@@ -378,15 +382,19 @@ const api = {
 const S = {
   screen:"login", settings:null, me:null, team:null, members:[],
   draft:{}, game:null, lastResult:null, board:null, error:"",
-  topicIdx:0, renderKey:"", editing:false,
+  topicIdx:0, renderKey:"", editing:false, allNames:[],
 };
-/* 조 편성이 시작되기 전까지는 본인이 답변을 고칠 수 있습니다 */
-const canEdit = () => !!(S.settings && S.settings.form_open && !S.settings.teams_published);
+/* 조 편성이 시작되기 전까지는 본인이 답변을 고칠 수 있습니다.
+   게임이 한 번이라도 진행된 뒤에는 잠깁니다 (이미 그 답변으로 게임을 했으므로) */
+const canEdit = () => !!(S.settings && S.settings.form_open && !S.settings.teams_published
+  && !((S.settings.round_log || []).length));
 const gameQuestions = () => (S.settings.questions || DEFAULT_QUESTIONS);
 const topicList = () => (S.settings.topics && S.settings.topics.length ? S.settings.topics : DEFAULT_TOPICS);
 const isLeader = () => !!(S.team && S.me && S.team.leader_id === S.me.id);
 const leaderOf = () => S.members.find(m => m.id === (S.team && S.team.leader_id)) || null;
 const teammates = () => S.members.filter(m => m.id !== S.me.id);
+/* 게임이 끝나기 전에는 조원·조장의 "이름"을 서로 감춥니다 (찾는 재미를 위해) */
+const revealed = () => gameWindow().state === "ended";
 
 function revealState() {
   const s = S.settings;
@@ -525,18 +533,21 @@ function viewForm() {
 
 function viewWaiting() {
   const rv = revealState();
+  const between = ((S.settings.round_log || []).length > 0);   // 1라운드를 이미 치렀는지
   return shell(`
     <div class="card center stack">
-      <div class="badge g" style="margin:0 auto">제출 완료</div>
-      <h2>${esc(S.me.name)}님, 접수되었습니다</h2>
-      <p class="muted small">조가 공개되면 이 화면에서 바로 확인할 수 있어요. 같은 이름·번호로 다시 들어오시면 됩니다.</p>
+      <div class="badge ${between ? "a" : "g"}" style="margin:0 auto">${between ? "다음 라운드 준비 중" : "제출 완료"}</div>
+      <h2>${between ? "새로운 조를 짜고 있어요" : esc(S.me.name) + "님, 접수되었습니다"}</h2>
+      <p class="muted small">${between
+        ? "잠시만 기다려 주세요. 새 조가 공개되면 이 화면에 자동으로 나타납니다."
+        : "조가 공개되면 이 화면에서 바로 확인할 수 있어요. 같은 이름·번호로 다시 들어오시면 됩니다."}</p>
       ${rv.at && !rv.open ? `
         <div style="margin-top:6px">
           <p class="small muted" style="margin-bottom:8px">조 공개까지</p>
           <div class="count" id="countdown"></div>
           <p class="tiny muted" style="margin-top:10px">${esc(fmtDateTime(rv.at))} 공개</p>
         </div>`
-      : `<div class="note a">아직 조 편성이 공개되지 않았습니다. 잠시 후 자동으로 열립니다.</div>`}
+      : `<div class="note a">${between ? "곧 새 조가 열립니다. 화면을 켜둔 채로 기다려 주세요." : "아직 조 편성이 공개되지 않았습니다. 잠시 후 자동으로 열립니다."}</div>`}
       ${canEdit()
         ? `<button class="btn soft" data-act="edit">답변 수정하기</button>`
         : `<div class="note a">조 편성이 시작되어 답변은 더 이상 수정할 수 없습니다.</div>`}
@@ -558,22 +569,42 @@ function answersOf(m) {
 }
 
 function teamCard() {
-  const roles = gameWindow().state === "ended" ? roleMap() : {};
+  const open = revealed();
+  const roles = open ? roleMap() : {};
+  const me = S.members.find(m => m.id === S.me.id);
   return `<div class="card stack">
     <div class="row-between">
       <div><p class="small muted">나의 조</p><h1>${S.team.no}조</h1></div>
       <span class="badge ${isLeader() ? "a" : "g"}">${isLeader() ? "조장" : "조원"}</span>
     </div>
-    <div>
-      ${S.members.map(m => `
+    ${open ? `
+      <div>
+        ${S.members.map(m => `
+          <div class="member">
+            <div class="avatar ${m.id === S.team.leader_id ? "lead" : ""}">${esc(initial(m.name))}</div>
+            <div class="grow">
+              <div style="font-weight:650">${esc(m.name)}${m.id === S.me.id ? ' <span class="tiny muted">(나)</span>' : ""}</div>
+              <div class="tiny muted">${roles[m.id] ? roles[m.id].emoji + " " + roles[m.id].name : (m.id === S.team.leader_id ? "조장" : "조원")}</div>
+            </div>
+          </div>`).join("")}
+      </div>`
+    : `
+      <div>
         <div class="member">
-          <div class="avatar ${m.id === S.team.leader_id ? "lead" : ""}">${esc(initial(m.name))}</div>
+          <div class="avatar ${isLeader() ? "lead" : ""}">${esc(initial(S.me.name))}</div>
           <div class="grow">
-            <div style="font-weight:650">${esc(m.name)}${m.id === S.me.id ? ' <span class="tiny muted">(나)</span>' : ""}</div>
-            <div class="tiny muted">${roles[m.id] ? roles[m.id].emoji + " " + roles[m.id].name : (m.id === S.team.leader_id ? "조장" : "조원")}</div>
+            <div style="font-weight:650">${esc(S.me.name)} <span class="tiny muted">(나)</span></div>
+            <div class="tiny muted">${isLeader() ? "조장" : "조원"}</div>
           </div>
-        </div>`).join("")}
-    </div>
+        </div>
+        <div class="member">
+          <div class="avatar">?</div>
+          <div class="grow">
+            <div style="font-weight:650">나머지 ${Math.max(0, S.members.length - 1)}명</div>
+            <div class="tiny muted">게임이 끝나면 공개됩니다</div>
+          </div>
+        </div>
+      </div>`}
   </div>`;
 }
 
@@ -585,43 +616,60 @@ function viewTeam() {
   const w = gameWindow();
   const lead = leaderOf();
   const iAmLeader = isLeader();
+  const mates = Math.max(0, S.members.length - 1);
   let block = "";
+
+  // 조장의 답변 카드 — 게임 중에는 이름을 가립니다
+  const leaderCard = (title, desc) => `
+    <div class="card stack">
+      <div class="row-between"><h3>${title}</h3>
+        <span class="badge a">${revealed() && lead ? esc(lead.name) : "우리 조장"}</span></div>
+      ${desc ? `<p class="muted small">${desc}</p>` : ""}
+      <div>${lead ? answersOf(lead) : `<div class="note w">아직 조장이 지정되지 않았습니다.</div>`}</div>
+    </div>`;
 
   if (w.state === "waiting") {
     block = iAmLeader ? `
-      <div class="card stack">
+      <div class="card stack center">
+        <span class="badge a" style="margin:0 auto">잠시 후 시작</span>
         <h2>곧 게임이 시작됩니다</h2>
-        <p class="muted small">진행자가 시작 신호를 주면 이 화면에 <b>조원 맞히기</b> 버튼이 나타납니다. 그때까지 조원들과 가볍게 인사 나눠주세요.</p>
-        <div class="note a">당신은 <b>조장</b>입니다. 조원 ${Math.max(0, S.members.length - 1)}명의 답변을 보고 누가 누구인지 맞히게 됩니다.</div>
+        <p class="muted small">진행자가 신호를 주면 이 화면이 자동으로 바뀝니다.<br>
+          당신은 <b>조장</b>이에요. 조원 ${mates}명의 답변만 보고 누가 누구인지 찾아내야 합니다.</p>
+        <div class="note a">조원 이름은 알려드리지 않습니다. 직접 돌아다니며 찾아주세요!</div>
       </div>`
     : `
-      <div class="card stack">
-        <div class="row-between"><h2>조장의 답변</h2><span class="badge a">${esc(lead ? lead.name : "미정")}</span></div>
-        <p class="muted small">곧 조장이 여러분을 맞히는 게임이 시작됩니다. 그동안 조장이 어떤 사람인지 살펴보세요.</p>
-        <div>${lead ? answersOf(lead) : `<div class="note w">아직 조장이 지정되지 않았습니다.</div>`}</div>
-      </div>`;
+      <div class="card stack center">
+        <span class="badge a" style="margin:0 auto">잠시 후 시작</span>
+        <h2>곧 게임이 시작됩니다</h2>
+        <p class="muted small">우리 조장이 여러분을 찾아 나설 거예요.<br>화면을 켜둔 채로 기다려 주세요.</p>
+      </div>
+      ${leaderCard("우리 조장은 이렇게 답했어요", "누가 조장일지 눈치채 보세요. 이름은 게임이 끝나면 공개됩니다.")}`;
   }
 
   else if (w.state === "running") {
     block = iAmLeader ? `
-      <div class="card stack">
-        <div class="row-between"><h2>조원 맞히기</h2><span class="badge live clock" data-clock>--:--</span></div>
-        <p class="muted small">조원 ${Math.max(0, S.members.length - 1)}명의 답변이 익명으로 섞여 있습니다. 남은 시간 안에 전부 맞히면 등수가 나옵니다.</p>
+      <div class="card stack center" style="border-color:var(--accent)">
+        <span class="badge live" style="margin:0 auto">게임 진행 중</span>
+        <div class="clock big" data-clock>--:--</div>
+        <h2>조원 ${mates}명을 찾아주세요</h2>
+        <p class="muted small">답변만 보고 누구인지 맞히면 됩니다. 조원 이름은 알려드리지 않아요.<br>
+          돌아다니며 사람들에게 물어보고, 찾았다면 아래에서 이름을 골라주세요.</p>
         ${S.lastResult && S.lastResult.cleared
           ? `<div class="note g">전원 정답! ${fmtDur(S.lastResult.duration_ms)} 만에 완료했습니다.</div>
              <button class="btn" data-act="board">순위 보기</button>`
-          : `<button class="btn" data-act="game">${S.lastResult ? "다시 도전하기" : "게임 시작"}</button>
+          : `<button class="btn" data-act="game">${S.lastResult ? "다시 도전하기" : "게임 시작하기"}</button>
              <button class="btn ghost" data-act="board">순위 보기</button>`}
       </div>`
     : `
-      <div class="card stack">
-        <div class="row-between"><h2>게임 진행 중</h2><span class="badge live clock" data-clock>--:--</span></div>
-        <p class="muted small">조장 <b>${esc(lead ? lead.name : "")}</b>님이 지금 여러분의 답변을 보고 누가 누구인지 맞히고 있습니다. 조원끼리는 서로의 답변을 볼 수 없어요.</p>
+      <div class="card stack center" style="border-color:var(--accent)">
+        <span class="badge live" style="margin:0 auto">게임 진행 중</span>
+        <div class="clock big" data-clock>--:--</div>
+        <h2>조장이 당신을 찾고 있어요</h2>
+        <p class="muted small">우리 조장은 여러분이 적은 답변만 보고 있습니다.<br>
+          <b>누군가 다가와 물어보면 반갑게 대답해 주세요.</b> 그게 조장을 돕는 방법이에요.</p>
+        <div class="note a">먼저 “제가 조원이에요” 하고 밝히지는 말아주세요. 찾는 재미가 사라져요!</div>
       </div>
-      <div class="card stack">
-        <div class="row-between"><h3>조장의 답변</h3><span class="badge a">${esc(lead ? lead.name : "미정")}</span></div>
-        <div>${lead ? answersOf(lead) : ""}</div>
-      </div>`;
+      ${leaderCard("우리 조장은 이렇게 답했어요", "이 답변을 적은 사람이 우리 조장입니다. 누구일지 찾아보세요.")}`;
   }
 
   else {
@@ -677,14 +725,14 @@ function viewTeam() {
 
 function viewGame() {
   const g = S.game;
-  const names = g.mates.map(m => m.name);
+  const pool = (S.allNames.length ? S.allNames : g.mates).filter(p => p.id !== S.me.id);
   const picked = g.picks.filter(Boolean);
   const dup = new Set(picked.filter((v, i) => picked.indexOf(v) !== i));
   const ready = g.picks.every(Boolean) && dup.size === 0;
   return shell(`
     <div class="card stack">
       <div class="row-between">
-        <div><h2>조원 맞히기</h2><p class="small muted">${g.attempts > 1 ? g.attempts + "번째 시도" : "각 카드의 주인을 골라주세요"}</p></div>
+        <div><h2>조원 맞히기</h2><p class="small muted">${g.attempts > 1 ? g.attempts + "번째 시도" : "각 카드의 주인을 찾아 골라주세요"}</p></div>
         <span class="badge live clock" data-clock>--:--</span>
       </div>
       ${g.cards.map((c, i) => `
@@ -696,11 +744,12 @@ function viewGame() {
           <div style="margin-top:12px">
             <select data-pick="${i}">
               <option value="">누구일까요?</option>
-              ${names.map(n => `<option value="${esc(n)}" ${g.picks[i] === n ? "selected" : ""}>${esc(n)}</option>`).join("")}
+              ${pool.map(p => `<option value="${esc(p.id)}" ${g.picks[i] === p.id ? "selected" : ""}>${esc(p.name)}</option>`).join("")}
             </select>
           </div>
         </div>`).join("")}
       ${dup.size ? `<div class="note b">같은 사람을 두 번 골랐어요. 서로 다른 사람으로 골라주세요.</div>` : ""}
+      <p class="tiny muted center">전체 참가자 ${pool.length}명 중에서 고르는 거예요. 우리 조원이 누구인지는 알려드리지 않습니다.</p>
       <button class="btn" data-act="grade" ${ready ? "" : "disabled"}>정답 확인</button>
       <button class="btn ghost" data-act="back">나중에 하기</button>
     </div>`);
@@ -903,12 +952,19 @@ async function refresh() {
   const t = await api.getMyTeam(S.me.id);
   const rv = revealState();
   if (t && rv.open) {
+    if (S.team && S.team.id !== t.team.id) {   // 새 라운드 = 지난 게임 결과 정리
+      S.lastResult = null; S.game = null; S.board = null; S.topicIdx = 0;
+    }
     S.team = t.team;
     S.members = t.members;
     const me2 = S.members.find(m => m.id === S.me.id);
     if (me2) S.me = { ...S.me, ...me2 };
+    if (!S.allNames.length) { try { S.allNames = await api.allNames(); } catch (e) {} }
     S.screen = "team";
-  } else { S.team = null; S.members = []; S.screen = "waiting"; }
+  } else {
+    S.team = null; S.members = []; S.game = null; S.lastResult = null;
+    S.screen = "waiting";
+  }
   render();
 }
 
@@ -968,7 +1024,7 @@ async function grade() {
   const w = gameWindow();
   if (w.state !== "running") { S.game = null; S.screen = "team"; render(); return toast("시간이 종료되었습니다."); }
   const g = S.game;
-  const correct = g.cards.reduce((n, c, i) => n + (g.picks[i] === c.name ? 1 : 0), 0);
+  const correct = g.cards.reduce((n, c, i) => n + (g.picks[i] === c.id ? 1 : 0), 0);
   const total = g.cards.length;
   const cleared = correct === total;
   const duration = Date.now() - w.start;   // 전체 동시 시작 기준
